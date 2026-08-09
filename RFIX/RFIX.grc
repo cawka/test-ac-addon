@@ -1,0 +1,41 @@
+// Add-On resources: menu strings and the Add-On Manager name/description.
+//
+// DEVKIT: .grc is Graphisoft's cross-platform resource source (compiled
+// by ResConv, part of the DevKit's tools, into the platform-native
+// resource format). Verify this syntax against a real .grc from the
+// AC29 DevKit's example add-on — reproduced here from the long-stable
+// pre-AC29 format, not copied from AC29 sources. .grc is preprocessed,
+// so the resource ID constants below come straight from the C++ side
+// to guarantee they never drift apart.
+
+#include "../Src/AddOnIdentity.hpp"
+
+'STR#' ID_ADDON_INFO
+{
+	{
+		"Circuit Wiring",
+		"Curved wires that stay attached to connected objects, and circuit-based selection."
+	}
+};
+
+'MENU' ADDON_MENU_STRINGS_RESOURCE_ID
+{
+	"Circuit Wiring",
+	{
+		"Create Wire",
+		"Connect Wire Endpoint...",
+		"Select Circuit Wiring",
+		"Select Circuit Objects"
+	}
+};
+
+'MENU' ADDON_MENU_PROMPT_STRINGS_ID
+{
+	"Circuit Wiring",
+	{
+		"Draw a new curved wire",
+		"Attach a wire endpoint to an object so it follows the object when moved",
+		"Select all wiring belonging to the selected circuit",
+		"Select all objects belonging to the selected circuit"
+	}
+};

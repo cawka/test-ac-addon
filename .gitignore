@@ -1,0 +1,28 @@
+# Build output
+/build/
+/out/
+*.apx
+*.bundle/
+*.dylib
+*.dll
+*.pdb
+*.ilk
+*.obj
+*.o
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeUserPresets.json
+
+# IDE
+.vs/
+.vscode/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# OS
+.DS_Store
+Thumbs.db
