@@ -13,7 +13,7 @@ namespace Wiring {
 // needing to be added to a project library by hand). Must match the
 // "Circuit Wire.gsm" name used there. Kept as one named constant so a
 // rename only has to happen here.
-constexpr char kGdlWireLibPartName[] = "Circuit Wire";
+inline const GS::UniString kGdlWireLibPartName ("Circuit Wire");
 
 // Places a new "Circuit Wire" object with its origin at startPoint,
 // its endX/endY parameters set to reach endPoint, and bulge left at
