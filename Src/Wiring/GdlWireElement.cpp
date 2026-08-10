@@ -24,7 +24,7 @@ bool SetObjectParam (API_ElementMemo& memo, const char* paramName, double value)
 
 // GS::UniString has no "fill this fixed uchar_t buffer" convenience —
 // ToUStr() returns a UStr wrapper that only offers an implicit
-// conversion to `const UniChar::Layout*` (confirmed from
+// conversion to `const GS::UniChar::Layout*` (confirmed from
 // Support/Modules/GSRoot/UniString.hpp), so this is a manual bounded
 // copy. destCapacity is the array's element count (i.e.
 // sizeof(dest)/sizeof(dest[0])), not a byte count.
@@ -32,13 +32,13 @@ bool SetObjectParam (API_ElementMemo& memo, const char* paramName, double value)
 // DEVKIT: two assumptions here, not confirmed as certainly as the rest
 // of this function: GS::UniString::GetLength() is the length accessor
 // (very standard name, but unseen directly in what I grepped), and
-// GS::uchar_t / UniChar::Layout are the same underlying type (both
+// GS::uchar_t / GS::UniChar::Layout are the same underlying type (both
 // are unsigned short per the compiler's own error output, which is
 // suggestive but not a direct confirmation they're literally the same
 // typedef rather than merely same-sized).
 void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniString& name)
 {
-	const UniChar::Layout* src = name.ToUStr ();
+	const GS::UniChar::Layout* src = name.ToUStr ();
 	USize len = name.GetLength ();
 	if (len > destCapacity - 1)
 		len = destCapacity - 1;
@@ -134,10 +134,10 @@ bool IsGdlWireElement (const API_Guid& elemGuid)
 	if (ACAPI_LibraryPart_Get (&libPart) != NoError)
 		return false;
 
-	// DEVKIT: same GS::uchar_t/UniChar::Layout compatibility assumption
+	// DEVKIT: same GS::uchar_t/GS::UniChar::Layout compatibility assumption
 	// as FillFixedUniBuffer above — constructing a UniString straight
 	// from the fixed array (confirmed constructor:
-	// UniString(const UniChar::Layout* uStr)).
+	// UniString(const GS::UniChar::Layout* uStr)).
 	return GS::UniString (libPart.docu_UName) == kGdlWireLibPartName;
 }
 
