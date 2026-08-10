@@ -49,20 +49,28 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	API_Guid startHostGuid = APINULLGuid;
 	API_Guid endHostGuid = APINULLGuid;
 
-	// DEVKIT: confirm AC29's interactive "let the user click an element"
-	// call (historically ACAPI_UserInput_ClickAnElement /
-	// ACAPI_Interface_ClickAnElement in APIdefs_UserInput.h) — signature,
-	// prompt-string parameter, and how a cancelled click is reported all
-	// need checking against the real header (this is one I still
-	// couldn't verify against the DevKit itself — only the build
-	// template was public, not the API headers).
-	GSErrCode err = ACAPI_UserInput_ClickAnElement ("Click the start object", nullptr, &startHostGuid);
-	if (err != NoError || startHostGuid == APINULLGuid)
+	// There's no dedicated "click an element" call — confirmed against
+	// the real AC29 docs (Group: User Input) there isn't one. The actual
+	// pattern is ACAPI_UserInput_GetPoint: its output struct carries a
+	// `guid` field ("Guid of the clicked element"), APINULLGuid if the
+	// click didn't land on one.
+	API_GetPointType pointInfo = {};
+	CHTruncate ("Click the start object", pointInfo.prompt, sizeof (pointInfo.prompt));
+	GSErrCode err = ACAPI_UserInput_GetPoint (&pointInfo);
+	if (err != NoError)
 		return err;
+	startHostGuid = pointInfo.guid;
+	if (startHostGuid == APINULLGuid)
+		return APIERR_BADPARS; // clicked empty space, not an element
 
-	err = ACAPI_UserInput_ClickAnElement ("Click the end object", nullptr, &endHostGuid);
-	if (err != NoError || endHostGuid == APINULLGuid)
+	pointInfo = {};
+	CHTruncate ("Click the end object", pointInfo.prompt, sizeof (pointInfo.prompt));
+	err = ACAPI_UserInput_GetPoint (&pointInfo);
+	if (err != NoError)
 		return err;
+	endHostGuid = pointInfo.guid;
+	if (endHostGuid == APINULLGuid)
+		return APIERR_BADPARS;
 
 	// DEVKIT: layer index hardcoded to 0 (current/active layer) for the
 	// skeleton — swap in whatever layer selection policy you want

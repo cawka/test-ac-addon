@@ -2,8 +2,6 @@
 #include "CircuitProperty.hpp"
 #include "../Wiring/WireElement.hpp"
 
-#include <vector>
-
 namespace Circuit {
 
 namespace {
@@ -27,7 +25,7 @@ GSErrCode SelectByCircuitId (const GS::UniString& circuitId, bool keepWires)
 	// API_ZombieElemID with an appropriate filter mask, or a project-wide
 	// element list call — name to be confirmed against AC29 headers.
 
-	std::vector<API_Neig> toSelect;
+	GS::Array<API_Neig> toSelect;
 	for (const API_Guid& guid : allElements) {
 		bool isWire = Wiring::IsWireElement (guid);
 		if (isWire != keepWires)
@@ -38,14 +36,12 @@ GSErrCode SelectByCircuitId (const GS::UniString& circuitId, bool keepWires)
 
 		API_Neig neig = {};
 		neig.guid = guid;
-		toSelect.push_back (neig);
+		toSelect.Push (neig);
 	}
 
-	if (toSelect.empty ())
+	if (toSelect.IsEmpty ())
 		return NoError;
 
-	// DEVKIT: ACAPI_Selection_Select's signature (wrap/replace flag,
-	// API_Neig vs. API_Guid array) for AC29.
 	return ACAPI_Selection_Select (toSelect, true);
 }
 
@@ -63,9 +59,14 @@ GSErrCode SelectCircuitObjects (const GS::UniString& circuitId)
 
 GS::UniString CircuitIdOfSelection ()
 {
+	API_SelectionInfo selectionInfo = {};
 	GS::Array<API_Neig> selection;
-	// DEVKIT: ACAPI_Selection_Get's AC29 signature.
-	if (ACAPI_Selection_Get (selection, nullptr, true) != NoError)
+
+	GSErrCode err = ACAPI_Selection_Get (&selectionInfo, &selection, true);
+	// DEVKIT: API_SelectionInfo may carry a handle (e.g. a marquee
+	// coordinate list) that needs disposing — check its fields once
+	// convenient; not used here since we only read `selection`.
+	if (err != NoError)
 		return GS::UniString ();
 
 	for (const API_Neig& neig : selection) {

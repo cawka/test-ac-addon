@@ -123,23 +123,24 @@ API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Gui
 
 GSErrCode RestoreAllConnectionObservers ()
 {
-	// TODO: two things, once API_NotifyElementType's fields are known:
-	//   1. Call ACAPI_Element_InstallElementObserver (&OnHostElementChanged)
-	//      once here — the single global handler; OnHostElementChanged's
-	//      signature needs to change to match APIElementEventHandlerProc
-	//      (GSErrCode (const API_NotifyElementType*)) first.
-	//   2. Enumerate all wire elements — both native Splines
-	//      (API_SplineID) and placed "Circuit Wire" objects
-	//      (GdlWireElement::IsGdlWireElement) — load each one's stored
-	//      connections, and call ACAPI_Element_AttachObserver for each
-	//      distinct host GUID found. Needed so connections survive
-	//      project reload, since both the install and the attach are
-	//      runtime-only registrations.
+	GSErrCode err = ACAPI_Element_InstallElementObserver (&OnHostElementChanged);
+	if (err != NoError)
+		return err;
+
+	// TODO: enumerate all wire elements — both native Splines
+	// (API_SplineID) and placed "Circuit Wire" objects
+	// (GdlWireElement::IsGdlWireElement) — load each one's stored
+	// connections, and call ACAPI_Element_AttachObserver for each
+	// distinct host GUID found. Needed so connections survive project
+	// reload, since attaching (unlike the install above, which only
+	// needs to happen once ever) is per-element and runtime-only.
 	return NoError;
 }
 
-GSErrCode OnHostElementChanged (const API_Guid& elemGuid, API_NotifyElementType /*notifType*/)
+GSErrCode OnHostElementChanged (const API_NotifyElementType* elemType)
 {
+	const API_Guid elemGuid = elemType->elemHead.guid;
+
 	auto it = hostToWires.find (APIGuid2GSGuid (elemGuid));
 	if (it == hostToWires.end ())
 		return NoError;

@@ -73,14 +73,9 @@ GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId
 	property.value.variantStatus = API_VariantStatusNormal;
 	property.value.singleVariant.variant.uniStringValue = circuitId;
 
-	// DEVKIT: confirmed real function is
-	// ACAPI_Property_ModifyPropertyValue (const API_Property&, const
-	// GS::Array<API_Guid>&) — takes an array of elements, not one guid.
-	// Needs GS::Array's append method name confirmed (Push? Append?)
-	// before switching this to
-	// `GS::Array<API_Guid> elemGuids; elemGuids.???(elemGuid);
-	//  return ACAPI_Property_ModifyPropertyValue (property, elemGuids);`
-	return ACAPI_Property_SetPropertyValue (elemGuid, property);
+	GS::Array<API_Guid> elemGuids;
+	elemGuids.Push (elemGuid);
+	return ACAPI_Property_ModifyPropertyValue (property, elemGuids);
 }
 
 } // namespace Circuit
