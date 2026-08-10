@@ -22,15 +22,39 @@ bool SetObjectParam (API_ElementMemo& memo, const char* paramName, double value)
 	return false; // TODO
 }
 
+// GS::UniString has no "fill this fixed uchar_t buffer" convenience —
+// ToUStr() returns a UStr wrapper that only offers an implicit
+// conversion to `const UniChar::Layout*` (confirmed from
+// Support/Modules/GSRoot/UniString.hpp), so this is a manual bounded
+// copy. destCapacity is the array's element count (i.e.
+// sizeof(dest)/sizeof(dest[0])), not a byte count.
+//
+// DEVKIT: two assumptions here, not confirmed as certainly as the rest
+// of this function: GS::UniString::GetLength() is the length accessor
+// (very standard name, but unseen directly in what I grepped), and
+// GS::uchar_t / UniChar::Layout are the same underlying type (both
+// are unsigned short per the compiler's own error output, which is
+// suggestive but not a direct confirmation they're literally the same
+// typedef rather than merely same-sized).
+void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniString& name)
+{
+	const UniChar::Layout* src = name.ToUStr ();
+	USize len = name.GetLength ();
+	if (len > destCapacity - 1)
+		len = destCapacity - 1;
+	for (USize i = 0; i < len; ++i)
+		dest[i] = src[i];
+	dest[len] = 0;
+}
+
 } // namespace
 
 API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, short layerIndex)
 {
 	API_LibPart libPart = {};
-	// DEVKIT: confirm the field ACAPI_LibPart_Search matches the name
-	// against for AC29 (docu_UName has been the historical field for a
-	// library part's document/display name).
-	CHTruncate (kGdlWireLibPartName, libPart.docu_UName, sizeof (libPart.docu_UName));
+	FillFixedUniBuffer (libPart.docu_UName,
+		sizeof (libPart.docu_UName) / sizeof (libPart.docu_UName[0]),
+		kGdlWireLibPartName);
 
 	if (ACAPI_LibraryPart_Search (&libPart, false) != NoError)
 		return APINULLGuid;
@@ -110,9 +134,11 @@ bool IsGdlWireElement (const API_Guid& elemGuid)
 	if (ACAPI_LibraryPart_Get (&libPart) != NoError)
 		return false;
 
-	// DEVKIT: compare libPart.docu_UName (or whatever the confirmed
-	// field turns out to be) against kGdlWireLibPartName.
-	return true; // TODO
+	// DEVKIT: same GS::uchar_t/UniChar::Layout compatibility assumption
+	// as FillFixedUniBuffer above — constructing a UniString straight
+	// from the fixed array (confirmed constructor:
+	// UniString(const UniChar::Layout* uStr)).
+	return GS::UniString (libPart.docu_UName) == kGdlWireLibPartName;
 }
 
 } // namespace Wiring
