@@ -9,7 +9,7 @@ API_Guid CreateWire (const std::vector<WireNode>& nodes, short layerIndex)
 
 	API_Element element = {};
 	element.header.type = API_SplineID;
-	element.header.layer = layerIndex;
+	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 
 	// DEVKIT: API_SplineType's node/direction storage is a memo-backed
 	// array (like polylines), not inline in API_Element — fill

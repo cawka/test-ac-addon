@@ -37,7 +37,7 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 
 	API_Element element = {};
 	element.header.type = API_ObjectID;
-	element.header.layer = layerIndex;
+	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
 	element.object.libInd = libPart.index;
 

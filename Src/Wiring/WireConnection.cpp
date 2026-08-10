@@ -64,10 +64,11 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 	if (err != NoError)
 		return err;
 
-	// DEVKIT: ACAPI_Notification_InstallElementObserver — confirm
-	// signature (callback type, whether it takes a context pointer) in
-	// ACAPI_NotificationProcedures.hpp for AC29.
-	err = ACAPI_Notification_InstallElementObserver (&info.hostGuid);
+	// Per-element attach — pairs with the one-time global handler install
+	// via ACAPI_Element_InstallElementObserver (see
+	// AddOnMain.cpp/RestoreAllConnectionObservers; that side still needs
+	// API_NotifyElementType's fields confirmed before it's wired up).
+	err = ACAPI_Element_AttachObserver (info.hostGuid);
 	if (err != NoError)
 		return err;
 
@@ -89,9 +90,7 @@ GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end)
 
 	if (wires.empty ()) {
 		hostToWires.erase (APIGuid2GSGuid (info.hostGuid));
-		// DEVKIT: only uninstall the observer once no wire references
-		// this host anymore — ACAPI_Notification_UninstallElementObserver.
-		ACAPI_Notification_UninstallElementObserver (&info.hostGuid);
+		ACAPI_Element_DetachObserver (info.hostGuid);
 	}
 
 	return StoreConnection (wireGuid, end, ConnectionInfo {});
@@ -124,12 +123,18 @@ API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Gui
 
 GSErrCode RestoreAllConnectionObservers ()
 {
-	// TODO: enumerate all wire elements — both native Splines
-	// (API_SplineID) and placed "Circuit Wire" objects
-	// (GdlWireElement::IsGdlWireElement) — load each one's stored
-	// connections, and call ACAPI_Notification_InstallElementObserver
-	// for each distinct host GUID found. Needed so connections survive
-	// project reload, since observers are a runtime-only registration.
+	// TODO: two things, once API_NotifyElementType's fields are known:
+	//   1. Call ACAPI_Element_InstallElementObserver (&OnHostElementChanged)
+	//      once here — the single global handler; OnHostElementChanged's
+	//      signature needs to change to match APIElementEventHandlerProc
+	//      (GSErrCode (const API_NotifyElementType*)) first.
+	//   2. Enumerate all wire elements — both native Splines
+	//      (API_SplineID) and placed "Circuit Wire" objects
+	//      (GdlWireElement::IsGdlWireElement) — load each one's stored
+	//      connections, and call ACAPI_Element_AttachObserver for each
+	//      distinct host GUID found. Needed so connections survive
+	//      project reload, since both the install and the attach are
+	//      runtime-only registrations.
 	return NoError;
 }
 

@@ -52,10 +52,7 @@ GS::UniString GetCircuitId (const API_Guid& elemGuid)
 		return GS::UniString ();
 
 	API_Property property = {};
-	// DEVKIT: ACAPI_Property_GetPropertyValue's exact parameter order
-	// for AC29; property.definition vs. a separate definitionGuid
-	// argument varies by release.
-	if (ACAPI_Property_GetPropertyValue (elemGuid, circuitPropertyGuid, property) != NoError)
+	if (ACAPI_Element_GetPropertyValue (elemGuid, circuitPropertyGuid, property) != NoError)
 		return GS::UniString ();
 
 	if (property.isDefault || property.value.variantStatus != API_VariantStatusNormal)
@@ -76,6 +73,13 @@ GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId
 	property.value.variantStatus = API_VariantStatusNormal;
 	property.value.singleVariant.variant.uniStringValue = circuitId;
 
+	// DEVKIT: confirmed real function is
+	// ACAPI_Property_ModifyPropertyValue (const API_Property&, const
+	// GS::Array<API_Guid>&) — takes an array of elements, not one guid.
+	// Needs GS::Array's append method name confirmed (Push? Append?)
+	// before switching this to
+	// `GS::Array<API_Guid> elemGuids; elemGuids.???(elemGuid);
+	//  return ACAPI_Property_ModifyPropertyValue (property, elemGuids);`
 	return ACAPI_Property_SetPropertyValue (elemGuid, property);
 }
 
