@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Based on the paramlist.xml shipped with GRAPHISOFT/archicad-addon-cmake's
+     SampleObject (MIT licensed) built-in library part, with the sample's
+     A/B/ZZYZX dimension parameters swapped for our own endX/endY/bulge.
+     One deviation from that proven-working example, left unverified:
+     the sample's <StatBits><STBit_FixSize/></StatBits> (a fixed-size
+     rectangular footprint) is dropped here since this object isn't a
+     fixed rectangle — if placement/editing behaves oddly, that's the
+     first thing to try restoring. -->
+<ParamSection>
+	<ParamSectHeader>
+		<AutoHotspots>false</AutoHotspots>
+		<StatBits>
+		</StatBits>
+		<WDLeftFrame>0</WDLeftFrame>
+		<WDRightFrame>0</WDRightFrame>
+		<WDTopFrame>0</WDTopFrame>
+		<WDBotFrame>0</WDBotFrame>
+		<LayFlags>65535</LayFlags>
+		<WDMirrorThickness>0</WDMirrorThickness>
+		<WDWallInset>0</WDWallInset>
+	</ParamSectHeader>
+	<Parameters SectVersion="27" SectionFlags="0" SubIdent="0">
+		<Length Name="endX">
+			<Description><![CDATA["Far endpoint X offset from origin"]]></Description>
+			<Value>0</Value>
+		</Length>
+		<Length Name="endY">
+			<Description><![CDATA["Far endpoint Y offset from origin"]]></Description>
+			<Value>0</Value>
+		</Length>
+		<Length Name="bulge">
+			<Description><![CDATA["Curve bow amount (0 = straight)"]]></Description>
+			<Value>0</Value>
+		</Length>
+		<Boolean Name="AC_show2DHotspotsIn3D">
+			<Description><![CDATA["Show 2D Hotspots in 3D"]]></Description>
+			<Fix/>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Boolean>
+		<Length Name="ac_bottomlevel">
+			<Description><![CDATA["Bottom Level"]]></Description>
+			<Fix/>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Length Name="ac_toplevel">
+			<Description><![CDATA["Top Level"]]></Description>
+			<Fix/>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+	</Parameters>
+</ParamSection>

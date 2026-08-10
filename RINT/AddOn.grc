@@ -1,0 +1,14 @@
+#include "ResourceIds.hpp"
+
+'STR#' ID_ADDON_INFO "Add-on Name and Description" {
+/* [  1] */		"Circuit Wiring"
+/* [  2] */		"Curved wires that stay attached to connected objects, and circuit-based selection."
+}
+
+'STR#' ID_ADDON_MENU "Strings for the Menu" {
+/* [  1] */		"Create Wire (Spline)"
+/* [  2] */		"Connect Wire Endpoint..."
+/* [  3] */		"Create Wire Between Objects (GDL)"
+/* [  4] */		"Select Circuit Wiring"
+/* [  5] */		"Select Circuit Objects"
+}

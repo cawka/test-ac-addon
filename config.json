@@ -1,0 +1,13 @@
+{
+    "addOnName": "CircuitWiring",
+    "defaultLanguage": "INT",
+    "languages": [
+        "INT"
+    ],
+    "version": "0.1.0",
+    "copyright": {
+        "name": "cawka",
+        "year": "2026-%Y"
+    },
+    "description": "Curved wires that stay attached to connected objects, and circuit-based selection."
+}

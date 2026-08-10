@@ -1,65 +1,34 @@
-cmake_minimum_required (VERSION 3.20)
+# Based directly on GRAPHISOFT/archicad-addon-cmake (MIT licensed) —
+# see README.md for why. All the DevKit-discovery/linking/resource-
+# compilation logic lives in Tools/CMakeCommon.cmake (the
+# archicad-addon-cmake-tools submodule); this file just wires our own
+# Src/ into it, same as the upstream template's own CMakeLists.txt does
+# for its Src/.
 
-project (TestACAddOn CXX)
+cmake_minimum_required (VERSION 3.19)
 
-list (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include (FindArchicadAPIDevKit)
+include (Tools/CMakeCommon.cmake)
 
-set (CMAKE_CXX_STANDARD 17)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set_property (GLOBAL PROPERTY USE_FOLDERS ON)
+set (AC_API_DEVKIT_DIR "$ENV{AC_API_DEVKIT_DIR}" CACHE PATH "API DevKit directory (the DevKit's Support folder).")
 
-set (ADDON_SOURCES
-    Src/AddOnMain.cpp
-    Src/Wiring/WireElement.cpp
-    Src/Wiring/WireConnection.cpp
-    Src/Wiring/GdlWireElement.cpp
-    Src/Wiring/ElementAnchor.cpp
-    Src/Circuit/CircuitProperty.cpp
-    Src/Circuit/CircuitSelection.cpp
-    Src/Commands/MenuCommands.cpp
-)
-
-set (ADDON_HEADERS
-    Src/AddOnIdentity.hpp
-    Src/Wiring/WireEnd.hpp
-    Src/Wiring/WireElement.hpp
-    Src/Wiring/WireConnection.hpp
-    Src/Wiring/GdlWireElement.hpp
-    Src/Wiring/ElementAnchor.hpp
-    Src/Circuit/CircuitProperty.hpp
-    Src/Circuit/CircuitSelection.hpp
-    Src/Commands/MenuCommands.hpp
-)
-
-add_library (TestACAddOn MODULE ${ADDON_SOURCES} ${ADDON_HEADERS})
-
-target_include_directories (TestACAddOn PRIVATE
-    Src
-    Src/Circuit
-    Src/Wiring
-    Src/Commands
-)
-
-if (ArchicadAPIDevKit_FOUND)
-    target_include_directories (TestACAddOn PRIVATE ${ArchicadAPIDevKit_INCLUDE_DIRS})
-    target_link_libraries (TestACAddOn PRIVATE ${ArchicadAPIDevKit_LIBRARIES})
-else ()
-    message (WARNING
-        "Building TestACAddOn without the Archicad API Development Kit — "
-        "this will fail at the '#include \"ACAPinc.h\"' step. See README.md.")
+if (NOT DEFINED AC_VERSION)
+    set (AC_VERSION 29)
 endif ()
 
-if (WIN32)
-    set_target_properties (TestACAddOn PROPERTIES
-        SUFFIX ".apx"
-        PREFIX ""
-    )
-    target_compile_definitions (TestACAddOn PRIVATE WINDOWS _WINDOWS)
-elseif (APPLE)
-    set_target_properties (TestACAddOn PROPERTIES
-        BUNDLE TRUE
-        BUNDLE_EXTENSION "bundle"
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/RFIX/Info.plist.in"
-    )
-    target_compile_definitions (TestACAddOn PRIVATE macintosh __APPLE__)
-endif ()
+message (STATUS "Archicad Version: ${AC_VERSION}")
+SetGlobalCompilerDefinitions (${AC_VERSION})
+
+ReadConfigJson ()
+set (AC_ADDON_LANGUAGE "${addOnDefaultLanguage}" CACHE STRING "Add-On language code.")
+
+project (${addOnName}-${AC_VERSION})
+
+set (AC_ADDON_FOR_DISTRIBUTION OFF CACHE BOOL "")
+
+set (AddOnSourcesFolder Src)
+set (AddOnResourcesFolder .)
+
+set (PCH_HEADER "Src/PrecompiledHeader.hpp")
+
+GenerateAddOnProject (CMakeTarget ${AC_VERSION} "${AC_API_DEVKIT_DIR}" ${AddOnSourcesFolder} ${AddOnResourcesFolder} ${AC_ADDON_LANGUAGE} ${addOnDefaultLanguage} ${PCH_HEADER})

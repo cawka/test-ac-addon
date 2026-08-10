@@ -1,0 +1,17 @@
+// Language-independent resources — pattern copied from
+// GRAPHISOFT/archicad-addon-cmake's RFIX/AddOnFix.grc (MIT licensed).
+//
+// The MDID (Menu Developer ID) below is Graphisoft's placeholder pair
+// (1/1) — fine for local development, but per the upstream README you
+// need real, registered MDIDs (from
+// https://archicadapi.graphisoft.com/profile/add-ons) before
+// distributing this add-on, so its menu doesn't collide with another
+// developer's.
+'MDID' 32500 "Add-On Identifier" {
+	1 /* Set as your developer id. */
+	1 /* Set as your local id. */
+}
+
+'GICN' 10001 "AddOnIcon" {
+	"AddOnIcon"
+}

@@ -33,15 +33,23 @@ constant-radius bends, not just Bezier), the fallback is `API_PolyLineType`
 with `curveType = APICurve_Bezier` per segment — same module, swap the
 element type, same call sites.
 
-### 1b. GDL object — `Src/Wiring/GdlWireElement.*` + `Library/CircuitWire/`
+### 1b. GDL object — `Src/Wiring/GdlWireElement.*` + `RINT/ACLib/Src/Circuit Wire/`
 
 A small custom Object library part ("Circuit Wire") with three
-parameters — `endX`, `endY`, `bulge` — and a 2D script that draws one
-curved (or straight, if `bulge` is 0) line from the placement origin to
-the far end. See `Library/CircuitWire/README.md` for how to actually
-create the library part in Archicad (the on-disk container format
-isn't reproduced here — see that README for why) and
-`Library/CircuitWire/2D_Script.gdl` for the script itself.
+parameters — `endX`, `endY`, `bulge` — and a 2D script
+(`scripts/2d.gdl`) that draws one curved (or straight, if `bulge` is 0)
+line from the placement origin to the far end. Shipped as a **built-in**
+library part: `RINT/BuiltInLibParts.grc` bundles
+`RINT/ACLib/Src/Circuit Wire/` into the add-on itself (compiled in by
+`Tools/CompileResources.py`), and `AddOnMain.cpp`'s
+`HasBuiltInLibPart`/`RegisterInterface` detect that and call
+`ACAPI_AddOnIntegration_RegisterBuiltInLibrary ()` at startup — so
+there's no manual "add this to your library" step for whoever loads the
+add-on. That on-disk folder format (`libpartdata.xml`, `libpartdocs.xml`,
+`ancestry.xml`, `calledmacros.xml`, `paramlist.xml`, `scripts/2d.gdl`,
+`scripts/3d.gdl`) is copied from GRAPHISOFT/archicad-addon-cmake's own
+`SampleObject` built-in part, with its parameters swapped for ours —
+not reconstructed from memory, unlike an earlier version of this file.
 
 Why this exists alongside the Spline backend, not instead of it: it's
 always exactly two points (start, end), which is what makes a
@@ -128,7 +136,10 @@ two things most likely to have shifted.
 
 ## Menu commands — `Src/Commands/MenuCommands.*`
 
-Thin layer: menu item IDs (`RFIX/RFIX.grc`) map to functions here, which
-call the modules above. Keeping command dispatch separate from the
-wiring/property logic means the logic is testable/reusable if you later
-add a palette or toolbar instead of (or in addition to) menu items.
+Thin layer: `MenuCommandHandler` (registered against `ID_ADDON_MENU` in
+`AddOnMain.cpp`) switches on the item index (`Src/ResourceIds.hpp`,
+kept in sync with the string list in `RINT/AddOn.grc`) and calls
+functions here, which call the modules above. Keeping command dispatch
+separate from the wiring/property logic means the logic is
+testable/reusable if you later add a palette or toolbar instead of (or
+in addition to) menu items.

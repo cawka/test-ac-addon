@@ -6,16 +6,20 @@
 
 namespace Wiring {
 
-// Name of the library part in Library/CircuitWire — must match
-// whatever name it's given when added to the project's library (see
-// Library/CircuitWire/README.md). Kept as one named constant so a
+// Name of the built-in library part shipped in
+// RINT/ACLib/Src/Circuit Wire/ (see RINT/BuiltInLibParts.grc, which is
+// what makes it "built-in" — baked into the add-on bundle and
+// auto-registered in AddOnMain.cpp's RegisterInterface, rather than
+// needing to be added to a project library by hand). Must match the
+// "Circuit Wire.gsm" name used there. Kept as one named constant so a
 // rename only has to happen here.
 constexpr char kGdlWireLibPartName[] = "Circuit Wire";
 
 // Places a new "Circuit Wire" object with its origin at startPoint,
 // its endX/endY parameters set to reach endPoint, and bulge left at
-// the library part's default (straight — see Library/CircuitWire's 2D
-// script). Returns the new element's GUID, or APINULLGuid on failure.
+// the library part's default (straight — see
+// RINT/ACLib/Src/Circuit Wire/scripts/2d.gdl). Returns the new
+// element's GUID, or APINULLGuid on failure.
 //
 // DEVKIT: confirm the AC29 call shape for placing an Object by library
 // part name — historically: ACAPI_LibPart_Search to resolve the part's

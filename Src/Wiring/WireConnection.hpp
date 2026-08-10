@@ -51,7 +51,7 @@ GSErrCode RestoreAllConnectionObservers ();
 // member name for AC29 (has been APINotify_ChangeType historically,
 // but check ACAPI_NotificationProcedures.hpp) and the exact
 // ACAPI_Notification_InstallElementObserver signature.
-GSErrCode __ACENV_CALL OnHostElementChanged (const API_Guid& elemGuid, API_NotifyElementType notifType);
+GSErrCode OnHostElementChanged (const API_Guid& elemGuid, API_NotifyElementType notifType);
 
 } // namespace Wiring
 

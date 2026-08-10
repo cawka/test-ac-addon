@@ -1,51 +1,25 @@
 #include "MenuCommands.hpp"
-#include "../AddOnIdentity.hpp"
+#include "../ResourceIds.hpp"
 #include "../Wiring/WireElement.hpp"
 #include "../Wiring/WireConnection.hpp"
 #include "../Circuit/CircuitSelection.hpp"
 
 namespace Commands {
 
-// Menu item indices within RFIX/RFIX.grc's ADDON_MENU_STRINGS_RESOURCE_ID
-// menu. Keep in sync with that file.
-enum MenuItemIndex {
-	MenuItem_CreateWire = 1,
-	MenuItem_ConnectWireEndpoint = 2,
-	MenuItem_CreateWireBetweenObjects = 3,
-	MenuItem_SelectCircuitWiring = 4,
-	MenuItem_SelectCircuitObjects = 5,
-};
-
-GSErrCode RegisterMenu ()
+GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 {
-	// DEVKIT: ACAPI_MenuItem_RegisterMenu's AC29 parameter list
-	// (resource IDs, MenuCode_UserDef placement, flags) — this call
-	// shape is carried over from the pre-rename ACAPI_Register_Menu.
-	return ACAPI_MenuItem_RegisterMenu (
-		ADDON_MENU_STRINGS_RESOURCE_ID,
-		ADDON_MENU_PROMPT_STRINGS_ID,
-		MenuCode_UserDef,
-		MenuFlag_Default);
-}
-
-GSErrCode InstallMenuHandler ()
-{
-	return ACAPI_MenuItem_InstallMenuHandler (ADDON_MENU_STRINGS_RESOURCE_ID, MenuCommandHandler);
-}
-
-GSErrCode __ACENV_CALL MenuCommandHandler (const API_MenuParams* menuParams)
-{
-	if (menuParams == nullptr)
-		return APIERR_BADPARS;
-
-	switch (menuParams->menuItemRef.itemIndex) {
-		case MenuItem_CreateWire:					return CreateWireCommand ();
-		case MenuItem_ConnectWireEndpoint:			return ConnectWireEndpointCommand ();
-		case MenuItem_CreateWireBetweenObjects:	return CreateWireBetweenObjectsCommand ();
-		case MenuItem_SelectCircuitWiring:			return SelectCircuitWiringCommand ();
-		case MenuItem_SelectCircuitObjects:		return SelectCircuitObjectsCommand ();
-		default:									return NoError;
+	switch (menuParams->menuItemRef.menuResID) {
+		case ID_ADDON_MENU:
+			switch (menuParams->menuItemRef.itemIndex) {
+				case MENUITEM_CREATE_WIRE:						return CreateWireCommand ();
+				case MENUITEM_CONNECT_WIRE_ENDPOINT:				return ConnectWireEndpointCommand ();
+				case MENUITEM_CREATE_WIRE_BETWEEN_OBJECTS:			return CreateWireBetweenObjectsCommand ();
+				case MENUITEM_SELECT_CIRCUIT_WIRING:				return SelectCircuitWiringCommand ();
+				case MENUITEM_SELECT_CIRCUIT_OBJECTS:				return SelectCircuitObjectsCommand ();
+			}
+			break;
 	}
+	return NoError;
 }
 
 GSErrCode CreateWireCommand ()
@@ -79,7 +53,9 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	// call (historically ACAPI_UserInput_ClickAnElement /
 	// ACAPI_Interface_ClickAnElement in APIdefs_UserInput.h) — signature,
 	// prompt-string parameter, and how a cancelled click is reported all
-	// need checking against the real header.
+	// need checking against the real header (this is one I still
+	// couldn't verify against the DevKit itself — only the build
+	// template was public, not the API headers).
 	GSErrCode err = ACAPI_UserInput_ClickAnElement ("Click the start object", nullptr, &startHostGuid);
 	if (err != NoError || startHostGuid == APINULLGuid)
 		return err;

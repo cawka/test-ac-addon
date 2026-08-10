@@ -1,9 +1,10 @@
 #include "CircuitProperty.hpp"
-#include "../AddOnIdentity.hpp"
 
 namespace Circuit {
 
 namespace {
+
+constexpr char kCircuitIdPropertyName[] = "Circuit ID";
 
 // Cached once EnsureCircuitPropertyDefinition has run.
 API_Guid circuitPropertyGuid = APINULLGuid;
@@ -23,7 +24,7 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	// pending that lookup API's exact AC29 signature.
 
 	API_PropertyDefinition definition = {};
-	definition.name = AddOnIdentity::kCircuitIdPropertyName;
+	definition.name = kCircuitIdPropertyName;
 	definition.valueType = API_PropertyStringValueType;
 	definition.collectionType = API_PropertySingleCollectionType;
 	definition.measureType = API_PropertyDefaultMeasureType;

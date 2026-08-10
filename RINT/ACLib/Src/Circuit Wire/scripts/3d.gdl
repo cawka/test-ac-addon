@@ -1,0 +1,7 @@
+! Circuit Wire — 3D Script
+!
+! Intentionally empty: 3D modeling is out of scope for now (per the
+! brief — "we can leave 3D modeling for later, if ever"). An object
+! with no 3D geometry is valid; it just won't render in 3D/section
+! views yet. Revisit here (e.g. a thin extruded tube along the same
+! arc as scripts/2d.gdl) if that changes.

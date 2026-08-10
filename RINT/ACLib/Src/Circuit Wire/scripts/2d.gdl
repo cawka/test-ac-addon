@@ -2,38 +2,39 @@
 !
 ! Draws a single circular-arc curve in the floor plan from the
 ! placement origin (0,0) to (endX, endY), bowed perpendicular to the
-! straight chord by `bulge`. bulge = 0 draws a plain LINE2.
+! straight chord by `bulge`. bulge = 0 draws a plain line2.
 !
 ! This is deliberately NOT a true multi-tangent spline — the brief was
 ! "curve in 2D, endpoints have to match, the exact shape doesn't" — so
 ! a single arc through a computed midpoint is enough, and it only
-! needs ARC2/LINE2 plus plain algebra: both are long-stable, safe-to-
-! trust GDL commands. Only endX/endY/bulge are ever written from the
+! needs arc2/line2 plus plain algebra: both are long-stable, safe-to-
+! trust GDL commands (confirmed lowercase-command style against
+! GRAPHISOFT/archicad-addon-cmake's SampleObject, which uses
+! "rect2 0, 0, a, b"). Only endX/endY/bulge are ever written from the
 ! C++ side (Src/Wiring/GdlWireElement.cpp) — nothing else in this
 ! script is addon-controlled.
 !
-! DEVKIT/GDL: I don't have the GDL Reference Guide in front of me, so
-! two things here are flagged rather than asserted as certain — check
-! both against a live Archicad before trusting this beyond a quick
+! GDL: two things below are still flagged rather than asserted as
+! certain, since I don't have the GDL Reference Guide in front of me —
+! check both in a live Archicad before trusting this beyond a quick
 ! test:
-!   1. ATAN2(y,x) as the two-argument arctangent — some GDL versions
+!   1. atan2(y,x) as the two-argument arctangent — some GDL versions
 !      may spell this differently or require manual quadrant handling.
-!   2. GOTO/line-label control flow (used below for early-exit on the
-!      degenerate cases) — long supported in GDL, but confirm it's still
-!      idiomatic rather than something newer object templates avoid.
+!   2. goto/line-label control flow (used below for early-exit on the
+!      degenerate cases).
 
 eps = 0.0001
 
-chordLen = SQRT(endX * endX + endY * endY)
+chordLen = sqrt(endX * endX + endY * endY)
 
-IF chordLen < eps THEN
-    GOTO 90
-ENDIF
+if chordLen < eps then
+	goto 90
+endif
 
-IF ABS(bulge) < eps THEN
-    LINE2 0, 0, endX, endY
-    GOTO 90
-ENDIF
+if abs(bulge) < eps then
+	line2 0, 0, endX, endY
+	goto 90
+endif
 
 ! Midpoint of the curve: chord midpoint, offset perpendicular to the
 ! chord by `bulge`.
@@ -46,19 +47,19 @@ my = endY / 2 + (endX / chordLen) * bulge
 ! it's checked anyway).
 d = 2 * (0 * (my - endY) + mx * (endY - 0) + endX * (0 - my))
 
-IF ABS(d) < eps THEN
-    LINE2 0, 0, endX, endY
-    GOTO 90
-ENDIF
+if abs(d) < eps then
+	line2 0, 0, endX, endY
+	goto 90
+endif
 
 cx = ((mx*mx + my*my) * (endY - 0) + (endX*endX + endY*endY) * (0 - my)) / d
 cy = ((mx*mx + my*my) * (0 - endX) + (endX*endX + endY*endY) * (mx - 0)) / d
 
-r = SQRT((cx - 0) * (cx - 0) + (cy - 0) * (cy - 0))
+r = sqrt((cx - 0) * (cx - 0) + (cy - 0) * (cy - 0))
 
-a1 = ATAN2(0 - cy, 0 - cx)
-a2 = ATAN2(endY - cy, endX - cx)
+a1 = atan2(0 - cy, 0 - cx)
+a2 = atan2(endY - cy, endX - cx)
 
-ARC2 cx, cy, r, a1, a2
+arc2 cx, cy, r, a1, a2
 
 90:

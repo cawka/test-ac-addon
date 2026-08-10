@@ -133,7 +133,7 @@ GSErrCode RestoreAllConnectionObservers ()
 	return NoError;
 }
 
-GSErrCode __ACENV_CALL OnHostElementChanged (const API_Guid& elemGuid, API_NotifyElementType /*notifType*/)
+GSErrCode OnHostElementChanged (const API_Guid& elemGuid, API_NotifyElementType /*notifType*/)
 {
 	auto it = hostToWires.find (APIGuid2GSGuid (elemGuid));
 	if (it == hostToWires.end ())
