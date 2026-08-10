@@ -32,7 +32,7 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// library part's document/display name).
 	CHTruncate (kGdlWireLibPartName, libPart.docu_UName, sizeof (libPart.docu_UName));
 
-	if (ACAPI_LibPart_Search (&libPart, false) != NoError)
+	if (ACAPI_LibraryPart_Search (&libPart, false) != NoError)
 		return APINULLGuid;
 
 	API_Element element = {};
@@ -107,7 +107,7 @@ bool IsGdlWireElement (const API_Guid& elemGuid)
 
 	API_LibPart libPart = {};
 	libPart.index = element.object.libInd;
-	if (ACAPI_LibPart_Get (&libPart) != NoError)
+	if (ACAPI_LibraryPart_Get (&libPart) != NoError)
 		return false;
 
 	// DEVKIT: compare libPart.docu_UName (or whatever the confirmed
