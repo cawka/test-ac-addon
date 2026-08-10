@@ -23,6 +23,7 @@ GSErrCode __ACENV_CALL MenuCommandHandler (const API_MenuParams* menuParams);
 // dispatch so they're callable directly (tests, a future palette, ...).
 GSErrCode CreateWireCommand ();
 GSErrCode ConnectWireEndpointCommand ();
+GSErrCode CreateWireBetweenObjectsCommand ();
 GSErrCode SelectCircuitWiringCommand ();
 GSErrCode SelectCircuitObjectsCommand ();
 

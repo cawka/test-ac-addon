@@ -2,19 +2,18 @@
 #define WIRING_WIRE_CONNECTION_HPP
 
 #include "ACAPinc.h"
+#include "WireEnd.hpp"
 
 namespace Wiring {
 
-// Which end of the wire is attached.
-enum class WireEnd { Start, End };
-
-// Describes how a wire endpoint is anchored to a host element.
-// hotspotIndex is host-type-specific (e.g. a GDL object's hotspot
-// number); use whichever addressing makes sense once you know which
-// element types wires connect to (Objects, Lamps, MEP elements, ...).
+// Describes how a wire endpoint is anchored to a host element. v1
+// anchoring is deliberately just "this object" — the endpoint tracks
+// the host's own placement origin (see ElementAnchor.hpp), not a
+// specific hotspot/edge on it. That's what makes "click the start
+// object, click the end object" a complete connect gesture with no
+// further picking needed.
 struct ConnectionInfo {
 	API_Guid	hostGuid = APINULLGuid;
-	Int32		hotspotIndex = 0;
 };
 
 // Attaches wireGuid's given endpoint to hostGuid, persists the
@@ -29,12 +28,24 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 // per-endpoint attachment, and other connections may still rely on it.
 GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end);
 
+// The "click start object, click end object" gesture in one call:
+// places a new GDL "Circuit Wire" (see GdlWireElement.hpp) between
+// their current anchor points, then connects both of its ends via
+// Connect() above so it tracks either host from then on. This is what
+// Commands::CreateWireBetweenObjectsCommand calls once it has both
+// clicked GUIDs. Returns the new wire's GUID, or APINULLGuid on
+// failure (nothing is left half-created — see .cpp).
+API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Guid& endHostGuid, short layerIndex);
+
 // Re-installs observers for every stored connection. Call from
 // Initialize() and after undo/redo — see docs/ARCHITECTURE.md, section 2.
 GSErrCode RestoreAllConnectionObservers ();
 
 // Notification callback registered per host element. Recomputes and
-// pushes new geometry for every wire endpoint anchored to elemGuid.
+// pushes new geometry for every wire endpoint anchored to elemGuid —
+// dispatches to WireElement::SetWireEndpoint or
+// GdlWireElement::SetGdlWireEndpoint depending on which backend that
+// particular wire is.
 //
 // DEVKIT: confirm APINotifyElementID's "geometry/position changed"
 // member name for AC29 (has been APINotify_ChangeType historically,

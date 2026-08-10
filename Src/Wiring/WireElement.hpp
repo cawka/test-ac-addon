@@ -2,6 +2,7 @@
 #define WIRING_WIRE_ELEMENT_HPP
 
 #include "ACAPinc.h"
+#include "WireEnd.hpp"
 #include <vector>
 
 namespace Wiring {
@@ -28,6 +29,14 @@ API_Guid CreateWire (const std::vector<WireNode>& nodes, short layerIndex);
 // Replaces an existing wire's node geometry (endpoints moved because a
 // connected host object moved) and pushes the change to the database.
 GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& nodes);
+
+// Convenience for the connection-tracking path (see WireConnection.*):
+// reads the wire's current nodes, replaces just its first (Start) or
+// last (End) node's position with newPoint (2D — z taken from the
+// existing node, since connection-tracking only moves things in plan
+// for now), and writes the result back via SetWireNodes. Interior
+// nodes are left untouched.
+GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint);
 
 // True if elemGuid refers to an element this module created (checked
 // via element type, not just existence).

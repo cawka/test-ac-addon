@@ -1,5 +1,7 @@
 #include "WireConnection.hpp"
 #include "WireElement.hpp"
+#include "GdlWireElement.hpp"
+#include "ElementAnchor.hpp"
 #include "../Circuit/CircuitProperty.hpp"
 
 #include <algorithm>
@@ -95,13 +97,39 @@ GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end)
 	return StoreConnection (wireGuid, end, ConnectionInfo {});
 }
 
+API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Guid& endHostGuid, short layerIndex)
+{
+	if (startHostGuid == APINULLGuid || endHostGuid == APINULLGuid || startHostGuid == endHostGuid)
+		return APINULLGuid;
+
+	const API_Coord startPoint = GetElementAnchorPoint (startHostGuid);
+	const API_Coord endPoint = GetElementAnchorPoint (endHostGuid);
+
+	API_Guid wireGuid = CreateGdlWire (startPoint, endPoint, layerIndex);
+	if (wireGuid == APINULLGuid)
+		return APINULLGuid;
+
+	GSErrCode err = Connect (wireGuid, WireEnd::Start, ConnectionInfo { startHostGuid });
+	if (err == NoError)
+		err = Connect (wireGuid, WireEnd::End, ConnectionInfo { endHostGuid });
+
+	if (err != NoError) {
+		// DEVKIT: delete the half-connected wire (ACAPI_Element_Delete)
+		// so a failed connect doesn't leave a stray element behind.
+		return APINULLGuid;
+	}
+
+	return wireGuid;
+}
+
 GSErrCode RestoreAllConnectionObservers ()
 {
-	// TODO: enumerate all wire elements (ACAPI_Element_Filter over
-	// API_SplineID), load each one's stored connections, and call
-	// ACAPI_Notification_InstallElementObserver for each distinct host
-	// GUID found. Needed so connections survive project reload, since
-	// observers are a runtime-only registration.
+	// TODO: enumerate all wire elements — both native Splines
+	// (API_SplineID) and placed "Circuit Wire" objects
+	// (GdlWireElement::IsGdlWireElement) — load each one's stored
+	// connections, and call ACAPI_Notification_InstallElementObserver
+	// for each distinct host GUID found. Needed so connections survive
+	// project reload, since observers are a runtime-only registration.
 	return NoError;
 }
 
@@ -111,14 +139,14 @@ GSErrCode __ACENV_CALL OnHostElementChanged (const API_Guid& elemGuid, API_Notif
 	if (it == hostToWires.end ())
 		return NoError;
 
-	for (const auto& [wireGuid, end] : it->second) {
-		ConnectionInfo info = LoadConnection (wireGuid, end);
+	const API_Coord newAnchor = GetElementAnchorPoint (elemGuid);
 
-		// TODO: resolve info.hotspotIndex against the host's current
-		// placement/transformation to get the new anchor point, then
-		// fetch the wire's current nodes, replace the affected
-		// endpoint, and call WireElement::SetWireNodes.
-		(void) info;
+	for (const auto& [wireGuid, end] : it->second) {
+		if (IsGdlWireElement (wireGuid)) {
+			SetGdlWireEndpoint (wireGuid, end, newAnchor);
+		} else if (IsWireElement (wireGuid)) {
+			SetWireEndpoint (wireGuid, end, newAnchor);
+		}
 	}
 
 	return NoError;

@@ -8,55 +8,97 @@ Three requirements drive the module layout:
 3. Later: select all wires in a circuit, and all objects in a circuit,
    based on a custom property set at connect-time.
 
-## 1. Curved wires — `Src/Wiring/WireElement.*`
+## 1. Curved wires — two backends, pick per use case
 
-Use Archicad's native **Spline** element type (`API_SplineType`) rather
-than a GDL library part:
+### 1a. Native Spline — `Src/Wiring/WireElement.*`
+
+`API_SplineType`, not a GDL library part:
 
 - It already has Bezier-style direction control vectors per node
-  (`API_SplineDirs`), so "curved pline" is a first-class shape, not
-  something you approximate with arcs.
+  (`API_SplineDirs`), so "curved pline" is a first-class shape with any
+  number of nodes, not something you approximate with arcs.
 - It participates in native undo, snap, pen/layer/floor plan display,
   and 3D without any of that being reimplemented.
 - Downside: less visual customization than a GDL object (no custom 2D
-  script) — acceptable for wiring, which is really just geometry plus a
-  couple of properties.
+  script), and there's no placement UI wired up yet — see the TODO in
+  `Commands::CreateWireCommand`.
 
 `WireElement.cpp` owns:
-- `CreateWire(nodes, directions, layer) -> API_Guid`
-- `SetWireNodes(guid, nodes, directions)` — used after a connected
-  endpoint moves.
+- `CreateWire(nodes, layer) -> API_Guid`
+- `SetWireNodes(guid, nodes)` / `SetWireEndpoint(guid, end, point)` —
+  the latter is what connection-tracking calls after a host moves.
 
 If curvature needs go beyond what `API_SplineType` gives you (e.g.
 constant-radius bends, not just Bezier), the fallback is `API_PolyLineType`
 with `curveType = APICurve_Bezier` per segment — same module, swap the
 element type, same call sites.
 
+### 1b. GDL object — `Src/Wiring/GdlWireElement.*` + `Library/CircuitWire/`
+
+A small custom Object library part ("Circuit Wire") with three
+parameters — `endX`, `endY`, `bulge` — and a 2D script that draws one
+curved (or straight, if `bulge` is 0) line from the placement origin to
+the far end. See `Library/CircuitWire/README.md` for how to actually
+create the library part in Archicad (the on-disk container format
+isn't reproduced here — see that README for why) and
+`Library/CircuitWire/2D_Script.gdl` for the script itself.
+
+Why this exists alongside the Spline backend, not instead of it: it's
+always exactly two points (start, end), which is what makes a
+"click the start object, click the end object" placement gesture
+complete with nothing else to specify — see
+`Commands::CreateWireBetweenObjectsCommand` and
+`Wiring::ConnectObjectsWithGdlWire`, which is the fully wired-up path
+in this skeleton (unlike the Spline backend's placement command, which
+is still a TODO). The tradeoff for that simplicity: it's genuinely just
+two points and a bulge, not a true multi-node curve — fine per the
+brief ("don't have to match exact spline, just endpoints"), but revisit
+if a circuit ever needs a wire to route around something.
+
+`GdlWireElement.cpp` owns:
+- `CreateGdlWire(startPoint, endPoint, layer) -> API_Guid`
+- `SetGdlWireEndpoint(guid, end, point)` — same role as
+  `WireElement::SetWireEndpoint`, called from the same
+  `OnHostElementChanged` dispatch (section 2 below).
+
 ## 2. Live connection to an object — `Src/Wiring/WireConnection.*`
 
 Archicad has no built-in "attach line to object" relationship for
 generic elements (that exists for MEP systems, not arbitrary
-Spline+Object pairs), so this skeleton builds it from two primitives:
+wire+Object pairs), so this skeleton builds it from three primitives,
+shared by both wire backends:
 
+- **What a wire endpoint is anchored to.** Deliberately just "this
+  object" — `ElementAnchor.cpp`'s `GetElementAnchorPoint` reads the
+  host's own placement origin (`element.object.pos` / `.lamp.pos`
+  today; extend the switch for other element types as needed). Not a
+  specific hotspot or edge point. That's what makes "click the start
+  object, click the end object" a complete connect gesture with
+  nothing further to pick — it's also the piece most worth revisiting
+  if a host's *shape*, not just its origin, needs to matter later (e.g.
+  anchoring to a specific corner of a panel rather than its insertion
+  point).
 - **Where the wire remembers what it's attached to.** Store, per wire
-  endpoint, the host element's `API_Guid` and an attachment descriptor
-  (which hotspot index, or an anchor-point-relative-to-origin offset)
-  in the wire element's own memo (`ACAPI_Element_GetMemo` /
-  `ACAPI_Element_SetMemo`, using the free-form "extra" segment, or a
-  private property if the memo route turns out to be too fragile across
-  copy/paste — decide once you're against real headers).
-- **How the wire finds out the host moved.** Register an element
-  observer on the host GUID via
-  `ACAPI_Notification_InstallElementObserver`. On
+  endpoint, the host element's `API_Guid` (`ConnectionInfo`) in the wire
+  element's own memo (`ACAPI_Element_GetMemo` / `ACAPI_Element_SetMemo`,
+  using the free-form "extra" segment, or a private property if the
+  memo route turns out to be too fragile across copy/paste — decide
+  once you're against real headers; `LoadConnection`/`StoreConnection`
+  in `WireConnection.cpp` are the TODO stubs for this).
+- **How the wire finds out the host moved, and which backend to push
+  the update through.** Register an element observer on the host GUID
+  via `ACAPI_Notification_InstallElementObserver`. On
   `APINotify_ChangeType` (or whatever AC29 names the "geometry changed"
-  reason), read the host's new anchor point/transformation and call
-  `WireElement::SetWireNodes` on every wire that references it, then
-  `ACAPI_Element_Change`.
+  reason), `OnHostElementChanged` reads the host's new anchor point and
+  dispatches to whichever backend that wire actually is —
+  `GdlWireElement::SetGdlWireEndpoint` if `IsGdlWireElement` says so,
+  `WireElement::SetWireEndpoint` otherwise — so the two backends share
+  one observer/index/dispatch path instead of duplicating it.
 - **Reconnecting after undo/redo/copy.** Observers don't survive across
   undo boundaries or document reload by themselves — re-install them
-  from `Initialize()` by scanning existing wires' stored host GUIDs, and
-  again after any undo notification the DevKit exposes
-  (`APINotify_UndoRedo` or similar).
+  from `Initialize()` by scanning existing wires (both backends) for
+  their stored host GUIDs, and again after any undo notification the
+  DevKit exposes (`APINotify_UndoRedo` or similar).
 
 This is the module most worth re-checking against the real AC29 headers
 first: the exact notification reason enum and the memo layout are the

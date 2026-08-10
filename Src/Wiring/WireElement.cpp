@@ -64,6 +64,35 @@ GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& n
 	return err;
 }
 
+GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint)
+{
+	API_Element element = {};
+	element.header.guid = wireGuid;
+
+	GSErrCode err = ACAPI_Element_Get (&element);
+	if (err != NoError)
+		return err;
+
+	API_ElementMemo memo = {};
+	err = ACAPI_Element_GetMemo (wireGuid, &memo);
+	if (err != NoError)
+		return err;
+
+	// TODO: read the existing node array out of memo (same struct-layout
+	// caveat as CreateWire/SetWireNodes above), replace nodes.front () or
+	// nodes.back ()'s x/y (keep z) depending on `end`, then call
+	// SetWireNodes with the full, updated node list.
+	std::vector<WireNode> nodes;
+	(void) newPoint;
+
+	ACAPI_DisposeElemMemoHdls (&memo);
+
+	if (nodes.size () < 2)
+		return APIERR_NOTSUPPORTED;
+
+	return SetWireNodes (wireGuid, nodes);
+}
+
 bool IsWireElement (const API_Guid& elemGuid)
 {
 	API_Elem_Head head = {};

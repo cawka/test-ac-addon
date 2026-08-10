@@ -22,8 +22,9 @@
 {
 	"Circuit Wiring",
 	{
-		"Create Wire",
+		"Create Wire (Spline)",
 		"Connect Wire Endpoint...",
+		"Create Wire Between Objects (GDL)",
 		"Select Circuit Wiring",
 		"Select Circuit Objects"
 	}
@@ -33,8 +34,9 @@
 {
 	"Circuit Wiring",
 	{
-		"Draw a new curved wire",
-		"Attach a wire endpoint to an object so it follows the object when moved",
+		"Draw a new curved wire as a native Spline element",
+		"Attach a native-Spline wire endpoint to an object so it follows the object when moved",
+		"Click a start object then an end object to place a curved GDL wire connecting them",
 		"Select all wiring belonging to the selected circuit",
 		"Select all objects belonging to the selected circuit"
 	}

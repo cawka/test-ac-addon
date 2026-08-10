@@ -11,8 +11,9 @@ namespace Commands {
 enum MenuItemIndex {
 	MenuItem_CreateWire = 1,
 	MenuItem_ConnectWireEndpoint = 2,
-	MenuItem_SelectCircuitWiring = 3,
-	MenuItem_SelectCircuitObjects = 4,
+	MenuItem_CreateWireBetweenObjects = 3,
+	MenuItem_SelectCircuitWiring = 4,
+	MenuItem_SelectCircuitObjects = 5,
 };
 
 GSErrCode RegisterMenu ()
@@ -38,11 +39,12 @@ GSErrCode __ACENV_CALL MenuCommandHandler (const API_MenuParams* menuParams)
 		return APIERR_BADPARS;
 
 	switch (menuParams->menuItemRef.itemIndex) {
-		case MenuItem_CreateWire:				return CreateWireCommand ();
-		case MenuItem_ConnectWireEndpoint:		return ConnectWireEndpointCommand ();
-		case MenuItem_SelectCircuitWiring:		return SelectCircuitWiringCommand ();
-		case MenuItem_SelectCircuitObjects:	return SelectCircuitObjectsCommand ();
-		default:								return NoError;
+		case MenuItem_CreateWire:					return CreateWireCommand ();
+		case MenuItem_ConnectWireEndpoint:			return ConnectWireEndpointCommand ();
+		case MenuItem_CreateWireBetweenObjects:	return CreateWireBetweenObjectsCommand ();
+		case MenuItem_SelectCircuitWiring:			return SelectCircuitWiringCommand ();
+		case MenuItem_SelectCircuitObjects:		return SelectCircuitObjectsCommand ();
+		default:									return NoError;
 	}
 }
 
@@ -58,10 +60,42 @@ GSErrCode CreateWireCommand ()
 
 GSErrCode ConnectWireEndpointCommand ()
 {
-	// TODO: let the user click a wire endpoint, then click a host
-	// element; resolve the click to a Wiring::ConnectionInfo (host GUID
-	// + hotspot/anchor) and call Wiring::Connect.
+	// TODO: for the native-Spline backend (WireElement.*), where a wire
+	// can have more than two nodes and only its Start/End are
+	// connectable: let the user click a wire endpoint, then click a
+	// host element, and call Wiring::Connect(wireGuid, end, { hostGuid }).
+	// The GDL backend doesn't need this — see
+	// CreateWireBetweenObjectsCommand below, which creates and connects
+	// both ends in one click-click gesture.
 	return APIERR_NOTSUPPORTED;
+}
+
+GSErrCode CreateWireBetweenObjectsCommand ()
+{
+	API_Guid startHostGuid = APINULLGuid;
+	API_Guid endHostGuid = APINULLGuid;
+
+	// DEVKIT: confirm AC29's interactive "let the user click an element"
+	// call (historically ACAPI_UserInput_ClickAnElement /
+	// ACAPI_Interface_ClickAnElement in APIdefs_UserInput.h) — signature,
+	// prompt-string parameter, and how a cancelled click is reported all
+	// need checking against the real header.
+	GSErrCode err = ACAPI_UserInput_ClickAnElement ("Click the start object", nullptr, &startHostGuid);
+	if (err != NoError || startHostGuid == APINULLGuid)
+		return err;
+
+	err = ACAPI_UserInput_ClickAnElement ("Click the end object", nullptr, &endHostGuid);
+	if (err != NoError || endHostGuid == APINULLGuid)
+		return err;
+
+	// DEVKIT: layer index hardcoded to 0 (current/active layer) for the
+	// skeleton — swap in whatever layer selection policy you want
+	// (active layer via ACAPI_Environment, a dedicated "Circuit Wiring"
+	// layer looked up/created once, etc).
+	const short wireLayerIndex = 0;
+
+	API_Guid wireGuid = Wiring::ConnectObjectsWithGdlWire (startHostGuid, endHostGuid, wireLayerIndex);
+	return (wireGuid != APINULLGuid) ? NoError : APIERR_GENERAL;
 }
 
 GSErrCode SelectCircuitWiringCommand ()

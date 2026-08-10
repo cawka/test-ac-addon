@@ -12,6 +12,8 @@ set (ADDON_SOURCES
     Src/AddOnMain.cpp
     Src/Wiring/WireElement.cpp
     Src/Wiring/WireConnection.cpp
+    Src/Wiring/GdlWireElement.cpp
+    Src/Wiring/ElementAnchor.cpp
     Src/Circuit/CircuitProperty.cpp
     Src/Circuit/CircuitSelection.cpp
     Src/Commands/MenuCommands.cpp
@@ -19,8 +21,11 @@ set (ADDON_SOURCES
 
 set (ADDON_HEADERS
     Src/AddOnIdentity.hpp
+    Src/Wiring/WireEnd.hpp
     Src/Wiring/WireElement.hpp
     Src/Wiring/WireConnection.hpp
+    Src/Wiring/GdlWireElement.hpp
+    Src/Wiring/ElementAnchor.hpp
     Src/Circuit/CircuitProperty.hpp
     Src/Circuit/CircuitSelection.hpp
     Src/Commands/MenuCommands.hpp
