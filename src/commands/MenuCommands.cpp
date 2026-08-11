@@ -88,7 +88,14 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	// (API_Neig::guid, "Guid of the element"). This is why the start
 	// click always fell through to "failed to get start object" even on
 	// a dead-on click.
+	//
+	// enableQuickSelection turns on Archicad's real Quick Selection
+	// (magnet) filter — same mechanism as the magnet-icon toolbar tool:
+	// live-highlights the candidate element as the cursor moves and
+	// resolves overlapping elements sensibly, instead of a plain nearest-
+	// point snap with no feedback and no defined overlap behavior.
 	API_GetPointType pointInfo = {};
+	pointInfo.enableQuickSelection = true;
 	CHTruncate ("Click the start object", pointInfo.prompt, sizeof (pointInfo.prompt));
 	GSErrCode err = ACAPI_UserInput_GetPoint (&pointInfo);
 	if (err != NoError) {
@@ -103,6 +110,7 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - got start object\n");
 
 	pointInfo = {};
+	pointInfo.enableQuickSelection = true;
 	CHTruncate ("Click the end object", pointInfo.prompt, sizeof (pointInfo.prompt));
 	err = ACAPI_UserInput_GetPoint (&pointInfo);
 	if (err != NoError) {
