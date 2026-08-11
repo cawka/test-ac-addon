@@ -5,7 +5,11 @@ namespace Circuit {
 
 namespace {
 
-constexpr char kCircuitIdPropertyName[] = "Circuit ID";
+// A real GS::UniString, constructed once — not a raw char[] relying on
+// an implicit, freshly-repeated conversion every time it's assigned
+// (create) or compared against (lookup). Same fix already applied to
+// kGdlWireLibPartName in GdlWireElement.hpp for the same reason.
+const GS::UniString kCircuitIdPropertyName ("Circuit ID");
 
 // Cached once EnsureCircuitPropertyDefinition has run.
 API_Guid circuitPropertyGuid = APINULLGuid;
