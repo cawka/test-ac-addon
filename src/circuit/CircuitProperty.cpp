@@ -101,7 +101,7 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 
 	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - not found, creating\n");
 
-	API_PropertyDefinition definition; 
+	API_PropertyDefinition definition;
 	definition.groupGuid      = circuitPropertyGroupGuid;
 	definition.name           = kCircuitIdPropertyName;
 	definition.collectionType = API_PropertySingleCollectionType;
@@ -109,8 +109,32 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	definition.measureType    = API_PropertyDefaultMeasureType;
 	definition.definitionType = API_PropertyCustomDefinitionType;
 
-	definition.canValueBeEditable = true; 
+	definition.canValueBeEditable = true;
 	definition.defaultValue.basicValue.singleVariant.variant.type = API_PropertyStringValueType;
+
+	// availability ("The list of classification GUIDs this property
+	// definition is available for") was left empty -- confirmed by the
+	// user's own check in the Property Manager UI, showing scope "None".
+	// A property with no classifications listed applies to nothing,
+	// which is why ACAPI_Property_ModifyPropertyValue kept failing even
+	// after the variant.type fix. There's no single "all elements"
+	// sentinel GUID (confirmed against the real Classification Manager
+	// docs) -- the actual mechanism is every classification system's
+	// root item, which is what the UI's "All" option itself populates.
+	GS::Array<API_ClassificationSystem> classificationSystems;
+	GSErrCode classErr = ACAPI_Classification_GetClassificationSystems (classificationSystems);
+	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - GetClassificationSystems returned %d, count=%d\n",
+		(int) classErr, (int) classificationSystems.GetSize ());
+	for (const API_ClassificationSystem& system : classificationSystems) {
+		GS::Array<API_ClassificationItem> rootItems;
+		GSErrCode rootErr = ACAPI_Classification_GetClassificationSystemRootItems (system.guid, rootItems);
+		A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - GetClassificationSystemRootItems returned %d, count=%d\n",
+			(int) rootErr, (int) rootItems.GetSize ());
+		if (rootErr != NoError)
+			continue;
+		for (const API_ClassificationItem& item : rootItems)
+			definition.availability.Push (item.guid);
+	}
 
 	err = ACAPI_Property_CreatePropertyDefinition (definition);
 	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - CreatePropertyDefinition returned %d\n", (int) err);
