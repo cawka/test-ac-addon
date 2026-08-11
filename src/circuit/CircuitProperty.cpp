@@ -28,11 +28,16 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	// ...) — "all property definitions" — filtered by name.
 	GS::Array<API_PropertyDefinition> allDefinitions;
 	GSErrCode err = ACAPI_Property_GetPropertyDefinitions (APINULLGuid, allDefinitions);
+	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - GetPropertyDefinitions returned %d, count=%d\n",
+		(int) err, (int) allDefinitions.GetSize ());
 	if (err != NoError)
 		return err;
 
 	for (const API_PropertyDefinition& existing : allDefinitions) {
-		if (existing.name == kCircuitIdPropertyName) {
+		bool isMatch = (existing.name == kCircuitIdPropertyName);
+		A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - existing def, nameLen=%d, isMatch=%d\n",
+			(int) existing.name.GetLength (), (int) isMatch);
+		if (isMatch) {
 			circuitPropertyGuid = existing.guid;
 			A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - found existing definition\n");
 			return NoError;
