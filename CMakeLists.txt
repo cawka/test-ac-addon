@@ -81,3 +81,21 @@ set (AddOnResourcesFolder .)
 set (PCH_HEADER "src/PrecompiledHeader.hpp")
 
 GenerateAddOnProject (CMakeTarget ${AC_VERSION} "${AC_API_DEVKIT_DIR}" ${AddOnSourcesFolder} ${AddOnResourcesFolder} ${AC_ADDON_LANGUAGE} ${addOnDefaultLanguage} ${PCH_HEADER})
+
+# GitVersion.hpp (A2E_GIT_VERSION) — regenerated on every build (this is
+# an `ALL`, no-OUTPUT-tracked custom target, so it always re-runs, unlike
+# a plain configure-time `execute_process` which would go stale the
+# moment you rebuild without reconfiguring) so the add-on always reports
+# the commit it was actually built from. See src/AddOnMain.cpp's
+# Initialize() for where it's surfaced.
+set (A2E_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
+add_custom_target (A2E_GenerateVersionHeader ALL
+    COMMAND ${CMAKE_COMMAND}
+        "-DSRC_DIR=${CMAKE_SOURCE_DIR}"
+        "-DDEST=${A2E_GENERATED_DIR}/GitVersion.hpp"
+        -P "${CMAKE_SOURCE_DIR}/cmake/GenerateGitVersion.cmake"
+    BYPRODUCTS "${A2E_GENERATED_DIR}/GitVersion.hpp"
+    COMMENT "Updating GitVersion.hpp"
+)
+add_dependencies (CMakeTarget A2E_GenerateVersionHeader)
+target_include_directories (CMakeTarget PRIVATE "${A2E_GENERATED_DIR}")

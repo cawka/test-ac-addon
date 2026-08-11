@@ -88,6 +88,25 @@ docs/ARCHITECTURE.md         how the three features map onto the API
    calls may only work against a demo-mode Archicad
    (`Archicad.exe -DEMO` / `open Archicad\ 29.app --args -demo`).
 
+## Debug output, and confirming which build is loaded
+
+- **`ACAPI_WriteReport(message, withDial)`** — writes to Archicad's own
+  Report window (`withDial=true` also pops a dialog). `Initialize()` in
+  `AddOnMain.cpp` calls this once at load time with a build identifier
+  (see below), and the "About A2 Electrical..." menu item calls it
+  on demand. No debugger needed — this is the first thing to check.
+- **`DBPrintf`** — lower-level debug-console output; only useful if
+  Archicad itself is running under a debugger (Xcode: Debug > Attach to
+  Process, pick the running Archicad process, once this add-on is
+  loaded you can set breakpoints in this repo's source directly and see
+  console output / step through code).
+- **Build identifier**: `A2E_GIT_VERSION` (from `git describe --always
+  --dirty --long`) is written into a generated header,
+  `build/generated/GitVersion.hpp`, regenerated on every build (not
+  just every `cmake` reconfigure — see `cmake/GenerateGitVersion.cmake`)
+  so it always reflects the actual commit an add-on binary was built
+  from. Surfaced via the Report-window message above.
+
 ## Architecture overview (see docs/ARCHITECTURE.md for detail)
 
 Two interchangeable wire backends, both 2D-only for now:

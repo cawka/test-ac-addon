@@ -5,10 +5,16 @@
 /* [  2] */		"Curved wires that stay attached to connected objects, and circuit-based selection."
 }
 
+// Item [1] is the top-level menu's own title (MenuCode_UserDef in
+// AddOnMain.cpp) — not a command. See the UNVERIFIED note in
+// ResourceIds.hpp about whether the real commands are still numbered
+// 1..6 from here, or shift by one.
 'STR#' ID_ADDON_MENU "Strings for the Menu" {
-/* [  1] */		"Create Wire (Spline)"
-/* [  2] */		"Connect Wire Endpoint..."
-/* [  3] */		"Create Wire Between Objects (GDL)"
-/* [  4] */		"Select Circuit Wiring"
-/* [  5] */		"Select Circuit Objects"
+/* [  1] */		"A2"
+/* [  2] */		"Create Wire (Spline)"
+/* [  3] */		"Connect Wire Endpoint..."
+/* [  4] */		"Create Wire Between Objects (GDL)"
+/* [  5] */		"Select Circuit Wiring"
+/* [  6] */		"Select Circuit Objects"
+/* [  7] */		"About A2 Electrical..."
 }

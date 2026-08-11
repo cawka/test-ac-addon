@@ -1,5 +1,6 @@
 #include "MenuCommands.hpp"
 #include "../ResourceIds.hpp"
+#include "GitVersion.hpp"
 #include "../wiring/WireElement.hpp"
 #include "../wiring/WireConnection.hpp"
 #include "../circuit/CircuitSelection.hpp"
@@ -16,6 +17,7 @@ GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 				case MENUITEM_CREATE_WIRE_BETWEEN_OBJECTS:			return CreateWireBetweenObjectsCommand ();
 				case MENUITEM_SELECT_CIRCUIT_WIRING:				return SelectCircuitWiringCommand ();
 				case MENUITEM_SELECT_CIRCUIT_OBJECTS:				return SelectCircuitObjectsCommand ();
+				case MENUITEM_ABOUT:								return AboutCommand ();
 			}
 			break;
 	}
@@ -98,6 +100,21 @@ GSErrCode SelectCircuitObjectsCommand ()
 		return APIERR_NOTMINE;
 
 	return Circuit::SelectCircuitObjects (circuitId);
+}
+
+GSErrCode AboutCommand ()
+{
+	// Stands in for a "grayed out, always-visible version label" —
+	// ACAPI_MenuItem_InstallMenuHandler doesn't offer a separate
+	// enable/disable callback in the modern API (checked; it's a
+	// resource-level mechanism instead, meant for window/context gating
+	// like "only in 3D", not a permanent info label), so this is a
+	// regular clickable item instead: shows the same build identifier
+	// Initialize() already writes to the Report window on load, as a
+	// dialog too (withDial=true) so it's visible without hunting for
+	// that window.
+	ACAPI_WriteReport (GS::UniString ("A2 Electrical — build " A2E_GIT_VERSION), true);
+	return NoError;
 }
 
 } // namespace Commands

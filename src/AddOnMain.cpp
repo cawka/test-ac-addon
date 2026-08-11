@@ -8,6 +8,8 @@
 
 #include "RS.hpp"
 
+#include "GitVersion.hpp"
+
 #include "ResourceIds.hpp"
 #include "commands/MenuCommands.hpp"
 #include "circuit/CircuitProperty.hpp"
@@ -32,7 +34,11 @@ API_AddonType CheckEnvironment (API_EnvirParams* envir)
 GSErrCode RegisterInterface (void)
 {
 #ifdef ServerMainVers_2700
-	GSErrCode err = ACAPI_MenuItem_RegisterMenu (AddOnMenuID, 0, MenuCode_Tools, MenuFlag_Default);
+	// MenuCode_UserDef + a menu-title string as the first ID_ADDON_MENU
+	// entry (RINT/AddOn.grc) makes this add-on register its own
+	// top-level "A2" menu instead of inserting into an existing one
+	// (MenuCode_Tools landed under "Options" — not what was wanted).
+	GSErrCode err = ACAPI_MenuItem_RegisterMenu (AddOnMenuID, 0, MenuCode_UserDef, MenuFlag_Default);
 	if (err != NoError)
 		return err;
 
@@ -66,9 +72,19 @@ GSErrCode Initialize (void)
 	if (err != NoError)
 		return err;
 
-	// Re-attach live element observers for wires connected in a
-	// previous session — see docs/ARCHITECTURE.md, section 2.
-	return Wiring::RestoreAllConnectionObservers ();
+	err = Wiring::RestoreAllConnectionObservers ();
+	if (err != NoError)
+		return err;
+
+	// Visible, no-debugger-needed confirmation of which build actually
+	// loaded — see Window > Report (or wherever this Archicad build
+	// surfaces it). A2E_GIT_VERSION comes from `git describe
+	// --always --dirty --long`, regenerated on every build (see
+	// CMakeLists.txt / cmake/GenerateGitVersion.cmake), not just every
+	// reconfigure.
+	ACAPI_WriteReport (GS::UniString ("A2 Electrical loaded — build " A2E_GIT_VERSION), false);
+
+	return NoError;
 }
 
 GSErrCode FreeData (void)

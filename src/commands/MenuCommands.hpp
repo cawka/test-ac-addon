@@ -19,6 +19,7 @@ GSErrCode ConnectWireEndpointCommand ();
 GSErrCode CreateWireBetweenObjectsCommand ();
 GSErrCode SelectCircuitWiringCommand ();
 GSErrCode SelectCircuitObjectsCommand ();
+GSErrCode AboutCommand ();
 
 } // namespace Commands
 
