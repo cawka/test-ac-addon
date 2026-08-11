@@ -103,10 +103,10 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// community threads confirm this exact workflow). GetDefaults gives
 	// a validly-shaped default memo to build on instead of an empty one.
 	GSErrCode defaultsErr = ACAPI_Element_GetDefaults (&element, &memo);
-	A2E_TRACE ("A2E: CreateGdlWire - GetDefaults returned %d, post-defaults: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) memo.params=%s\n",
+	A2E_TRACE ("A2E: CreateGdlWire - GetDefaults returned %d, post-defaults: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) angle=%.6f memo.params=%s\n",
 		(int) defaultsErr, (int) element.header.type.typeID, (int) element.object.libInd,
 		(int) element.header.floorInd, element.object.pos.x, element.object.pos.y,
-		(memo.params != nullptr) ? "non-null" : "null");
+		element.object.angle, (memo.params != nullptr) ? "non-null" : "null");
 	if (defaultsErr != NoError) {
 		A2E_TRACE ("A2E: CreateGdlWire - ACAPI_Element_GetDefaults failed\n");
 		return APINULLGuid;
@@ -126,6 +126,13 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	if (layerOverridden)
 		element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
+	// Same class of bug as libInd/layer above: GetDefaults leaves
+	// element.object.angle (API_ObjectType::angle, radians) at whatever
+	// the unrelated default object it picked was last rotated to. The
+	// 2D script draws endX/endY as a world-axis-aligned delta from the
+	// placement origin, so the object itself must be unrotated for that
+	// to point the right way.
+	element.object.angle = 0.0;
 
 	// CONFIRMED (real-world usage report, matches what we just saw
 	// directly: post-defaults libInd came back 6970, not our library
@@ -151,9 +158,10 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	bool setEndX = SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
 	bool setEndY = SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
 
-	A2E_TRACE ("A2E: CreateGdlWire - pre-Create: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) layerOverridden=%d setEndX=%d setEndY=%d guid-before=%s memo.params=%s\n",
+	A2E_TRACE ("A2E: CreateGdlWire - pre-Create: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) angle=%.6f layerOverridden=%d setEndX=%d setEndY=%d endX=%.4f endY=%.4f guid-before=%s memo.params=%s\n",
 		(int) element.header.type.typeID, (int) element.object.libInd, (int) element.header.floorInd,
-		element.object.pos.x, element.object.pos.y, (int) layerOverridden, (int) setEndX, (int) setEndY,
+		element.object.pos.x, element.object.pos.y, element.object.angle, (int) layerOverridden, (int) setEndX, (int) setEndY,
+		endPoint.x - startPoint.x, endPoint.y - startPoint.y,
 		(element.header.guid == APINULLGuid) ? "NULL" : "non-null", (memo.params != nullptr) ? "non-null" : "null");
 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
