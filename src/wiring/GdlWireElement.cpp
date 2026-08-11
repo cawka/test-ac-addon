@@ -1,4 +1,5 @@
 #include "GdlWireElement.hpp"
+#include "../Debug.hpp"
 
 namespace Wiring {
 
@@ -59,7 +60,7 @@ void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniStr
 
 API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, short layerIndex)
 {
-	DBPrintf ("A2E: CreateGdlWire start\n");
+	A2E_TRACE ("A2E: CreateGdlWire start\n");
 
 	API_LibPart libPart = {};
 	FillFixedUniBuffer (libPart.docu_UName,
@@ -67,10 +68,10 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 		kGdlWireLibPartName);
 
 	if (ACAPI_LibraryPart_Search (&libPart, false) != NoError) {
-		DBPrintf ("A2E: CreateGdlWire - ACAPI_LibraryPart_Search failed (library part not found)\n");
+		A2E_TRACE ("A2E: CreateGdlWire - ACAPI_LibraryPart_Search failed (library part not found)\n");
 		return APINULLGuid;
 	}
-	DBPrintf ("A2E: CreateGdlWire - found library part, index=%d\n", (int) libPart.index);
+	A2E_TRACE ("A2E: CreateGdlWire - found library part, index=%d\n", (int) libPart.index);
 
 	API_Element element = {};
 	element.header.type = API_ObjectID;
@@ -84,7 +85,7 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// community threads confirm this exact workflow). GetDefaults gives
 	// a validly-shaped default memo to build on instead of an empty one.
 	if (ACAPI_Element_GetDefaults (&element, &memo) != NoError) {
-		DBPrintf ("A2E: CreateGdlWire - ACAPI_Element_GetDefaults failed\n");
+		A2E_TRACE ("A2E: CreateGdlWire - ACAPI_Element_GetDefaults failed\n");
 		return APINULLGuid;
 	}
 
@@ -107,7 +108,7 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
 	ACAPI_DisposeElemMemoHdls (&memo);
 
-	DBPrintf ("A2E: CreateGdlWire - ACAPI_Element_Create returned %d\n", (int) err);
+	A2E_TRACE ("A2E: CreateGdlWire - ACAPI_Element_Create returned %d\n", (int) err);
 
 	return err == NoError ? element.header.guid : APINULLGuid;
 }

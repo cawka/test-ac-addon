@@ -2,6 +2,7 @@
 #include "WireElement.hpp"
 #include "GdlWireElement.hpp"
 #include "ElementAnchor.hpp"
+#include "../Debug.hpp"
 #include "../circuit/CircuitProperty.hpp"
 
 #include <algorithm>
@@ -106,15 +107,15 @@ API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Gui
 
 	API_Guid wireGuid = CreateGdlWire (startPoint, endPoint, layerIndex);
 	if (wireGuid == APINULLGuid) {
-		DBPrintf ("A2E: ConnectObjectsWithGdlWire - CreateGdlWire failed\n");
+		A2E_TRACE ("A2E: ConnectObjectsWithGdlWire - CreateGdlWire failed\n");
 		return APINULLGuid;
 	}
-	DBPrintf ("A2E: ConnectObjectsWithGdlWire - wire created, connecting both ends\n");
+	A2E_TRACE ("A2E: ConnectObjectsWithGdlWire - wire created, connecting both ends\n");
 
 	GSErrCode err = Connect (wireGuid, WireEnd::Start, ConnectionInfo { startHostGuid });
 	if (err == NoError)
 		err = Connect (wireGuid, WireEnd::End, ConnectionInfo { endHostGuid });
-	DBPrintf ("A2E: ConnectObjectsWithGdlWire - Connect calls returned %d\n", (int) err);
+	A2E_TRACE ("A2E: ConnectObjectsWithGdlWire - Connect calls returned %d\n", (int) err);
 
 	if (err != NoError) {
 		// DEVKIT: delete the half-connected wire (ACAPI_Element_Delete)
