@@ -27,6 +27,20 @@
 
 eps = 0.0001
 
+! PEN/LINE_TYPE directives (GDL Reference Guide, "Directives") apply to
+! every 2D element drawn after them until the next directive — one call
+! each covers both the line2 and arc2 branches below.
+PEN linePen
+LINE_TYPE lineType
+
+! Hotspots at both endpoints so the wire has real, clickable/snappable
+! points along it instead of only being selectable by hitting the
+! drawn line exactly — HOTSPOT2 x, y[, unID] (GDL Reference Guide,
+! "Graphical Editing Using Hotspots"); unID just needs to be unique
+! within this library part.
+HOTSPOT2 0, 0, 1
+HOTSPOT2 endX, endY, 2
+
 chordLen = SQR(endX * endX + endY * endY)
 
 if chordLen < eps then
@@ -35,6 +49,7 @@ endif
 
 if abs(bulge) < eps then
 	line2 0, 0, endX, endY
+	HOTSPOT2 endX / 2, endY / 2, 3
 	goto 90
 endif
 
@@ -51,6 +66,7 @@ d = 2 * (0 * (my - endY) + mx * (endY - 0) + endX * (0 - my))
 
 if abs(d) < eps then
 	line2 0, 0, endX, endY
+	HOTSPOT2 endX / 2, endY / 2, 3
 	goto 90
 endif
 
@@ -100,5 +116,6 @@ else
 endif
 
 arc2 cx, cy, r, a1, a2
+HOTSPOT2 mx, my, 3
 
 90:
