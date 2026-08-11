@@ -93,7 +93,14 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// defaults — reassert what this specific wire needs.
 	element.header.type = API_ObjectID;
 	element.object.libInd = libPart.index;
-	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
+	// layerIndex 0 is the caller's "use the default" placeholder (see
+	// MenuCommands.cpp), not a real layer — ACAPI_CreateAttributeIndex(0)
+	// is very likely not a valid layer attribute index, and clobbering
+	// GetDefaults' own valid default layer with it is the prime suspect
+	// for ACAPI_Element_Create's APIERR_BADINDEX-shaped failure. Only
+	// override when a real, specific layer was actually requested.
+	if (layerIndex != 0)
+		element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
 
 	// DEVKIT: still a no-op stub (see above) — the wire will be created
