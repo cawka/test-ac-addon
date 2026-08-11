@@ -1,4 +1,5 @@
 #include "CircuitProperty.hpp"
+#include "../Debug.hpp"
 
 namespace Circuit {
 
@@ -16,12 +17,29 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	if (circuitPropertyGuid != APINULLGuid)
 		return NoError;
 
-	// DEVKIT: look the definition up first (e.g.
-	// ACAPI_Property_GetPropertyDefinition by name/group) so re-running
-	// this across sessions doesn't create duplicate definitions; only
-	// fall through to ACAPI_Property_CreatePropertyDefinition when the
-	// lookup comes back empty. Left as a single create call here
-	// pending that lookup API's exact AC29 signature.
+	// Confirmed real bug, not a guess: ACAPI_Property_CreatePropertyDefinition
+	// fails with APIERR_NAMEALREADYUSED ("The name of the definition is
+	// already used in the given property group") on every load after the
+	// first, because this used to call Create unconditionally with no
+	// lookup — that error was aborting the rest of Initialize() on every
+	// subsequent add-on load. ACAPI_Property_GetPropertyDefinition only
+	// looks up by guid (useless here, we don't have one yet), so the
+	// real lookup is ACAPI_Property_GetPropertyDefinitions(APINULLGuid,
+	// ...) — "all property definitions" — filtered by name.
+	GS::Array<API_PropertyDefinition> allDefinitions;
+	GSErrCode err = ACAPI_Property_GetPropertyDefinitions (APINULLGuid, allDefinitions);
+	if (err != NoError)
+		return err;
+
+	for (const API_PropertyDefinition& existing : allDefinitions) {
+		if (existing.name == kCircuitIdPropertyName) {
+			circuitPropertyGuid = existing.guid;
+			A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - found existing definition\n");
+			return NoError;
+		}
+	}
+
+	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - not found, creating\n");
 
 	API_PropertyDefinition definition = {};
 	definition.name = kCircuitIdPropertyName;
@@ -29,7 +47,7 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	definition.collectionType = API_PropertySingleCollectionType;
 	definition.measureType = API_PropertyDefaultMeasureType;
 
-	GSErrCode err = ACAPI_Property_CreatePropertyDefinition (definition);
+	err = ACAPI_Property_CreatePropertyDefinition (definition);
 	if (err != NoError)
 		return err;
 
