@@ -42,8 +42,14 @@ src/circuit/CircuitSelection.* select-by-circuit-property commands
 src/commands/MenuCommands.*  menu command implementations, dispatched from AddOnMain.cpp
 RFIX/AddOnFix.grc            language-independent resources (MDID, icon)
 RFIX/Images/                 toolbar icon
+RFIX/BuiltInLibParts.grc     registers the GDL object below as built into the add-on itself —
+                              deliberately in RFIX, not R<lang>: it's a compiled binary resource,
+                              not translatable text, and the build script buries anything compiled
+                              from R<lang> inside a <region>.lproj/ subfolder that
+                              ACAPI_AddOnIntegration_RegisterBuiltInLibrary's resource-fork scan
+                              never looks in — confirmed by finding FILE_130.rsrd stranded in
+                              English.lproj/ instead of the bundle's top-level Resources/
 RINT/AddOn.grc               menu strings (English/International)
-RINT/BuiltInLibParts.grc     registers the GDL object below as built into the add-on itself
 RINT/ACLib/Src/Circuit Wire/ the "Circuit Wire" GDL object's real on-disk source form
 docs/ARCHITECTURE.md         how the three features map onto the API
 ```

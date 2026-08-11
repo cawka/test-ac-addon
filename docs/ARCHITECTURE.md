@@ -39,13 +39,23 @@ A small custom Object library part ("Circuit Wire") with three
 parameters — `endX`, `endY`, `bulge` — and a 2D script
 (`scripts/2d.gdl`) that draws one curved (or straight, if `bulge` is 0)
 line from the placement origin to the far end. Shipped as a **built-in**
-library part: `RINT/BuiltInLibParts.grc` bundles
+library part: `RFIX/BuiltInLibParts.grc` bundles
 `RINT/ACLib/Src/Circuit Wire/` into the add-on itself (compiled in by
-`Tools/CompileResources.py`), and `AddOnMain.cpp`'s
-`HasBuiltInLibPart`/`RegisterInterface` detect that and call
-`ACAPI_AddOnIntegration_RegisterBuiltInLibrary ()` at startup — so
-there's no manual "add this to your library" step for whoever loads the
-add-on. That on-disk folder format (`libpartdata.xml`, `libpartdocs.xml`,
+`Tools/CompileResources.py`'s `hsf2l` step), and `AddOnMain.cpp`'s
+`RegisterInterface` calls `ACAPI_AddOnIntegration_RegisterBuiltInLibrary
+()` unconditionally at startup — so there's no manual "add this to your
+library" step for whoever loads the add-on.
+`BuiltInLibParts.grc` deliberately lives in `RFIX`, not `RINT`: it's a
+compiled binary `'FILE'` resource, not translatable text, and
+`Tools/CompileResources.py` routes anything compiled from an `R<lang>`
+folder through its localized path, which lands the result inside a
+`<region>.lproj/` subfolder of the bundle. Confirmed the hard way — with
+it in `RINT`, the add-on built and loaded fine, `hsf2l` even converted
+the part successfully, but `RegisterBuiltInLibrary`'s resource-fork scan
+(which only looks at the bundle's top-level `Resources/`, not inside a
+language subfolder) never found it, so it never showed up in Library
+Manager and `ACAPI_LibraryPart_Search` always failed at runtime.
+That on-disk folder format (`libpartdata.xml`, `libpartdocs.xml`,
 `ancestry.xml`, `calledmacros.xml`, `paramlist.xml`, `scripts/2d.gdl`,
 `scripts/3d.gdl`) is copied from GRAPHISOFT/archicad-addon-cmake's own
 `SampleObject` built-in part, with its parameters swapped for ours —
