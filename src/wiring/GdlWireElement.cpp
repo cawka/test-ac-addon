@@ -127,12 +127,27 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 		element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
 
-	// DEVKIT: still a no-op stub (see above) — the wire will be created
-	// at the library part's default endX/endY (likely 0,0, i.e.
-	// zero-length) until this is implemented, not a crash but wrong
-	// geometry. Needs API_ElementMemo::params' real field name/type and
-	// API_AddParType's value-field name confirmed against the AC29
-	// headers.
+	// CONFIRMED (real-world usage report, matches what we just saw
+	// directly: post-defaults libInd came back 6970, not our library
+	// part's index): ACAPI_Element_GetDefaults only looks at the current
+	// tool/variation and ignores the libInd we set beforehand -- the
+	// memo.params it returns belongs to whatever object is "currently
+	// selected in the settings dialog", not Circuit Wire. That's why
+	// SetObjectParam below could never find endX/endY: they were never
+	// in this memo to begin with. Fetch Circuit Wire's own default
+	// params via ACAPI_LibraryPart_GetParams and swap them in.
+	double libA = 0.0, libB = 0.0;
+	Int32 addParNum = 0;
+	API_AddParType** addPars = nullptr;
+	GSErrCode paramsErr = ACAPI_LibraryPart_GetParams (libPart.index, &libA, &libB, &addParNum, &addPars);
+	A2E_TRACE ("A2E: CreateGdlWire - ACAPI_LibraryPart_GetParams returned %d, addParNum=%d, addPars=%s\n",
+		(int) paramsErr, (int) addParNum, (addPars != nullptr) ? "non-null" : "null");
+	if (paramsErr == NoError && addPars != nullptr) {
+		if (memo.params != nullptr)
+			ACAPI_DisposeAddParHdl (&memo.params);
+		memo.params = addPars;
+	}
+
 	bool setEndX = SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
 	bool setEndY = SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
 
