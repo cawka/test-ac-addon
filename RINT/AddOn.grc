@@ -5,16 +5,37 @@
 /* [  2] */		"Curved wires that stay attached to connected objects, and circuit-based selection."
 }
 
-// Item [1] is the top-level menu's own title (MenuCode_UserDef in
-// AddOnMain.cpp) — not a command. Confirmed (see ResourceIds.hpp):
-// itemIndex in the click handler is the STR# item number itself, so
-// commands are numbered [2]..[7] here, matching MENUITEM_* below.
-'STR#' ID_ADDON_MENU "Strings for the Menu" {
+// One 2-item STR# per command ([1] "A2" title repeated, [2] the one
+// command) instead of a single flat list — see the note in
+// ResourceIds.hpp about why a single [title, cmd, cmd, ...] STR# folds
+// everything after the first command into a submenu instead of staying
+// flat under "A2".
+'STR#' ID_ADDON_MENU_CREATE_WIRE "A2 Menu - Create Wire" {
 /* [  1] */		"A2"
 /* [  2] */		"Create Wire (Spline)"
-/* [  3] */		"Connect Wire Endpoint..."
-/* [  4] */		"Create Wire Between Objects (GDL)"
-/* [  5] */		"Select Circuit Wiring"
-/* [  6] */		"Select Circuit Objects"
-/* [  7] */		"About A2 Electrical..."
+}
+
+'STR#' ID_ADDON_MENU_CONNECT_WIRE_ENDPOINT "A2 Menu - Connect Wire Endpoint" {
+/* [  1] */		"A2"
+/* [  2] */		"Connect Wire Endpoint..."
+}
+
+'STR#' ID_ADDON_MENU_CREATE_WIRE_BETWEEN_OBJECTS "A2 Menu - Create Wire Between Objects" {
+/* [  1] */		"A2"
+/* [  2] */		"Create Wire Between Objects (GDL)"
+}
+
+'STR#' ID_ADDON_MENU_SELECT_CIRCUIT_WIRING "A2 Menu - Select Circuit Wiring" {
+/* [  1] */		"A2"
+/* [  2] */		"Select Circuit Wiring"
+}
+
+'STR#' ID_ADDON_MENU_SELECT_CIRCUIT_OBJECTS "A2 Menu - Select Circuit Objects" {
+/* [  1] */		"A2"
+/* [  2] */		"Select Circuit Objects"
+}
+
+'STR#' ID_ADDON_MENU_ABOUT "A2 Menu - About" {
+/* [  1] */		"A2"
+/* [  2] */		"About A2 Electrical..."
 }

@@ -20,7 +20,16 @@ static const GSResID AddOnInfoID		= ID_ADDON_INFO;
 static const Int32 AddOnNameID			= 1;
 static const Int32 AddOnDescriptionID	= 2;
 
-static const short AddOnMenuID			= ID_ADDON_MENU;
+// One resource per command — see ResourceIds.hpp for why a single
+// [title, cmd, cmd, ...] STR# doesn't stay flat under MenuCode_UserDef.
+static const GSResID AddOnMenuResIDs[] = {
+	ID_ADDON_MENU_CREATE_WIRE,
+	ID_ADDON_MENU_CONNECT_WIRE_ENDPOINT,
+	ID_ADDON_MENU_CREATE_WIRE_BETWEEN_OBJECTS,
+	ID_ADDON_MENU_SELECT_CIRCUIT_WIRING,
+	ID_ADDON_MENU_SELECT_CIRCUIT_OBJECTS,
+	ID_ADDON_MENU_ABOUT,
+};
 
 // ---- Required Add-On lifecycle entry points ----
 
@@ -36,13 +45,20 @@ GSErrCode RegisterInterface (void)
 {
 	A2E_TRACE ("A2E: RegisterInterface start\n");
 #ifdef ServerMainVers_2700
-	// MenuCode_UserDef + a menu-title string as the first ID_ADDON_MENU
-	// entry (RINT/AddOn.grc) makes this add-on register its own
+	// MenuCode_UserDef + a menu-title string as item [1] of each
+	// resource (RINT/AddOn.grc) makes this add-on register its own
 	// top-level "A2" menu instead of inserting into an existing one
 	// (MenuCode_Tools landed under "Options" — not what was wanted).
-	GSErrCode err = ACAPI_MenuItem_RegisterMenu (AddOnMenuID, 0, MenuCode_UserDef, MenuFlag_Default);
-	if (err != NoError)
-		return err;
+	// Registered once per command (see ResourceIds.hpp) so Archicad
+	// keeps them as flat siblings instead of nesting cmd[2].. under
+	// cmd[1] as a submenu.
+	for (GSResID menuResID : AddOnMenuResIDs) {
+		GSFlags flags = (menuResID == ID_ADDON_MENU_ABOUT) ? MenuFlag_SeparatorBefore : MenuFlag_Default;
+		GSErrCode err = ACAPI_MenuItem_RegisterMenu (menuResID, 0, MenuCode_UserDef, flags);
+		A2E_TRACE ("A2E: RegisterInterface - RegisterMenu(%d) returned %d\n", (int) menuResID, (int) err);
+		if (err != NoError)
+			return err;
+	}
 
 	// RINT/BuiltInLibParts.grc always ships a built-in library part
 	// ("Circuit Wire") in this add-on, so this is called unconditionally
@@ -52,11 +68,11 @@ GSErrCode RegisterInterface (void)
 	// included one; we always do, so that whole detection dance was
 	// just one more thing that could silently come back false and skip
 	// registration with no error.
-	err = ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
+	GSErrCode err = ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
 	A2E_TRACE ("A2E: RegisterInterface - RegisterBuiltInLibrary returned %d\n", (int) err);
 	return err;
 #else
-	return ACAPI_Register_Menu (AddOnMenuID, 0, MenuCode_Tools, MenuFlag_Default);
+	return ACAPI_Register_Menu (ID_ADDON_MENU_CREATE_WIRE, 0, MenuCode_Tools, MenuFlag_Default);
 #endif
 }
 
@@ -66,13 +82,17 @@ GSErrCode Initialize (void)
 
 	GSErrCode err;
 #ifdef ServerMainVers_2700
-	err = ACAPI_MenuItem_InstallMenuHandler (AddOnMenuID, Commands::MenuCommandHandler);
+	for (GSResID menuResID : AddOnMenuResIDs) {
+		err = ACAPI_MenuItem_InstallMenuHandler (menuResID, Commands::MenuCommandHandler);
+		A2E_TRACE ("A2E: Initialize - InstallMenuHandler(%d) returned %d\n", (int) menuResID, (int) err);
+		if (err != NoError)
+			return err;
+	}
 #else
-	err = ACAPI_Install_MenuHandler (AddOnMenuID, Commands::MenuCommandHandler);
-#endif
-	A2E_TRACE ("A2E: Initialize - InstallMenuHandler returned %d\n", (int) err);
+	err = ACAPI_Install_MenuHandler (ID_ADDON_MENU_CREATE_WIRE, Commands::MenuCommandHandler);
 	if (err != NoError)
 		return err;
+#endif
 
 	// Visible, no-debugger-needed confirmation of which build actually
 	// loaded — see Window > Report (or wherever this Archicad build

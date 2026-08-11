@@ -31,17 +31,16 @@ GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 	A2E_TRACE ("A2E: MenuCommandHandler menuResID=%d itemIndex=%d\n",
 		(int) menuParams->menuItemRef.menuResID, (int) menuParams->menuItemRef.itemIndex);
 
+	// Each command has its own menu resource (see ResourceIds.hpp), so
+	// menuResID identifies the command directly — itemIndex is always 2
+	// (the one real item in that resource, after the "A2" title at [1]).
 	switch (menuParams->menuItemRef.menuResID) {
-		case ID_ADDON_MENU:
-			switch (menuParams->menuItemRef.itemIndex) {
-				case MENUITEM_CREATE_WIRE:						return CreateWireCommand ();
-				case MENUITEM_CONNECT_WIRE_ENDPOINT:				return ConnectWireEndpointCommand ();
-				case MENUITEM_CREATE_WIRE_BETWEEN_OBJECTS:			return CreateWireBetweenObjectsCommand ();
-				case MENUITEM_SELECT_CIRCUIT_WIRING:				return SelectCircuitWiringCommand ();
-				case MENUITEM_SELECT_CIRCUIT_OBJECTS:				return SelectCircuitObjectsCommand ();
-				case MENUITEM_ABOUT:								return AboutCommand ();
-			}
-			break;
+		case ID_ADDON_MENU_CREATE_WIRE:					return CreateWireCommand ();
+		case ID_ADDON_MENU_CONNECT_WIRE_ENDPOINT:			return ConnectWireEndpointCommand ();
+		case ID_ADDON_MENU_CREATE_WIRE_BETWEEN_OBJECTS:	return CreateWireBetweenObjectsCommand ();
+		case ID_ADDON_MENU_SELECT_CIRCUIT_WIRING:			return SelectCircuitWiringCommand ();
+		case ID_ADDON_MENU_SELECT_CIRCUIT_OBJECTS:			return SelectCircuitObjectsCommand ();
+		case ID_ADDON_MENU_ABOUT:							return AboutCommand ();
 	}
 
 	return NoError;

@@ -5,11 +5,12 @@
 
 namespace Commands {
 
-// Registered directly against ID_ADDON_MENU via
-// ACAPI_MenuItem_InstallMenuHandler in AddOnMain.cpp's Initialize()
-// (menu registration itself happens in RegisterInterface(), also
-// there) — mirroring exactly where GRAPHISOFT/archicad-addon-cmake's
-// own template does both, rather than wrapping them here.
+// Registered against each of the ID_ADDON_MENU_* resources (see
+// ResourceIds.hpp) via ACAPI_MenuItem_InstallMenuHandler in
+// AddOnMain.cpp's Initialize() (menu registration itself happens in
+// RegisterInterface(), also there) — mirroring where
+// GRAPHISOFT/archicad-addon-cmake's own template does both, rather than
+// wrapping them here.
 GSErrCode MenuCommandHandler (const API_MenuParams* menuParams);
 
 // Menu item implementations. Kept separate from MenuCommandHandler's

@@ -136,10 +136,13 @@ two things most likely to have shifted.
 
 ## Menu commands — `src/commands/MenuCommands.*`
 
-Thin layer: `MenuCommandHandler` (registered against `ID_ADDON_MENU` in
-`AddOnMain.cpp`) switches on the item index (`src/ResourceIds.hpp`,
-kept in sync with the string list in `RINT/AddOn.grc`) and calls
-functions here, which call the modules above. Keeping command dispatch
-separate from the wiring/property logic means the logic is
-testable/reusable if you later add a palette or toolbar instead of (or
-in addition to) menu items.
+Thin layer: `MenuCommandHandler` (registered against each
+`ID_ADDON_MENU_*` resource in `AddOnMain.cpp` — one 2-item `STR#` per
+command, not one shared list; see the note in `src/ResourceIds.hpp`
+about why a single `[title, cmd, cmd, ...]` list folds every command
+after the first into a submenu instead of staying flat under "A2")
+switches on `menuResID` (`src/ResourceIds.hpp`, kept in sync with
+`RINT/AddOn.grc`) and calls functions here, which call the modules
+above. Keeping command dispatch separate from the wiring/property logic
+means the logic is testable/reusable if you later add a palette or
+toolbar instead of (or in addition to) menu items.
