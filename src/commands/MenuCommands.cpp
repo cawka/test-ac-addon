@@ -1,15 +1,32 @@
 #include "MenuCommands.hpp"
-#include "../ResourceIds.hpp"
+
+#include "ResourceIds.hpp"
 #include "GitVersion.hpp"
 #include "Debug.hpp"
-#include "../wiring/WireElement.hpp"
-#include "../wiring/WireConnection.hpp"
-#include "../circuit/CircuitSelection.hpp"
+#include "wiring/WireElement.hpp"
+#include "wiring/WireConnection.hpp"
+#include "circuit/CircuitSelection.hpp"
+#include "circuit/CircuitProperty.hpp"
 
 namespace Commands {
 
 GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 {
+	auto status = ACAPI_CallUndoableCommand ("Create Property Group", [&]() -> GSErrCode {
+		// Our own setup, on top of the template:
+		GSErrCode err = Circuit::EnsureCircuitPropertyDefinition ();
+		A2E_TRACE ("A2E: Initialize - EnsureCircuitPropertyDefinition returned %d\n", (int) err);
+		if (err != NoError)
+			return err;
+
+		err = Wiring::RestoreAllConnectionObservers ();
+		A2E_TRACE ("A2E: Initialize - RestoreAllConnectionObservers returned %d\n", (int) err);
+		return err;
+	});
+	if (status != NoError) {
+		return status;
+	}
+
 	A2E_TRACE ("A2E: MenuCommandHandler menuResID=%d itemIndex=%d\n",
 		(int) menuParams->menuItemRef.menuResID, (int) menuParams->menuItemRef.itemIndex);
 
@@ -25,6 +42,7 @@ GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 			}
 			break;
 	}
+
 	return NoError;
 }
 

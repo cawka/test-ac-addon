@@ -74,17 +74,6 @@ GSErrCode Initialize (void)
 	if (err != NoError)
 		return err;
 
-	// Our own setup, on top of the template:
-	err = Circuit::EnsureCircuitPropertyDefinition ();
-	A2E_TRACE ("A2E: Initialize - EnsureCircuitPropertyDefinition returned %d\n", (int) err);
-	if (err != NoError)
-		return err;
-
-	err = Wiring::RestoreAllConnectionObservers ();
-	A2E_TRACE ("A2E: Initialize - RestoreAllConnectionObservers returned %d\n", (int) err);
-	if (err != NoError)
-		return err;
-
 	// Visible, no-debugger-needed confirmation of which build actually
 	// loaded — see Window > Report (or wherever this Archicad build
 	// surfaces it). A2E_GIT_VERSION comes from `git describe

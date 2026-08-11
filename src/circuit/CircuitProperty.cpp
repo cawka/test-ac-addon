@@ -49,13 +49,16 @@ GSErrCode EnsureCircuitPropertyGroup ()
 
 	A2E_TRACE ("A2E: EnsureCircuitPropertyGroup - not found, creating\n");
 
-	API_PropertyGroup group = {};
+	API_PropertyGroup group;
+	group.groupType = API_PropertyCustomGroupType;
 	group.name = kCircuitPropertyGroupName;
 
 	err = ACAPI_Property_CreatePropertyGroup (group);
 	A2E_TRACE ("A2E: EnsureCircuitPropertyGroup - CreatePropertyGroup returned %d\n", (int) err);
-	if (err != NoError)
+	if (err != NoError) {
+
 		return err;
+	}
 
 	circuitPropertyGroupGuid = group.guid;
 	return NoError;
@@ -98,12 +101,16 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 
 	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - not found, creating\n");
 
-	API_PropertyDefinition definition = {};
-	definition.groupGuid = circuitPropertyGroupGuid;
-	definition.name = kCircuitIdPropertyName;
-	definition.valueType = API_PropertyStringValueType;
+	API_PropertyDefinition definition; 
+	definition.groupGuid      = circuitPropertyGroupGuid;
+	definition.name           = kCircuitIdPropertyName;
 	definition.collectionType = API_PropertySingleCollectionType;
-	definition.measureType = API_PropertyDefaultMeasureType;
+	definition.valueType      = API_PropertyStringValueType;
+	definition.measureType    = API_PropertyDefaultMeasureType;
+	definition.definitionType = API_PropertyCustomDefinitionType;
+
+	definition.canValueBeEditable = true; 
+	definition.defaultValue.basicValue.singleVariant.variant.type = API_PropertyStringValueType;
 
 	err = ACAPI_Property_CreatePropertyDefinition (definition);
 	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - CreatePropertyDefinition returned %d\n", (int) err);
