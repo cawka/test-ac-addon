@@ -11,20 +11,20 @@
 // keep in sync with that file and with the switch in
 // Commands::MenuCommandHandler.
 //
-// UNVERIFIED: the .grc's first STR# entry is now the top-level menu
-// title ("A2", for MenuCode_UserDef — see AddOnMain.cpp), not itself a
-// command. Graphisoft's own docs describe the real commands after a
-// menu/submenu title as "corresponding to the menu items in the
-// non-main-menu case" — read here as "still numbered 1..N, the title
-// isn't counted" — but that's this repo's best-effort reading of an
-// ambiguous doc sentence, not confirmed against a real running add-on.
-// If items dispatch to the wrong command (or item 1 turns out
-// unreachable), these values need to shift by one instead.
-#define MENUITEM_CREATE_WIRE					1
-#define MENUITEM_CONNECT_WIRE_ENDPOINT			2
-#define MENUITEM_CREATE_WIRE_BETWEEN_OBJECTS	3
-#define MENUITEM_SELECT_CIRCUIT_WIRING			4
-#define MENUITEM_SELECT_CIRCUIT_OBJECTS		5
-#define MENUITEM_ABOUT							6
+// CONFIRMED (graphisoft.github.io/archicad-api-devkit, Group Menu Item /
+// ACAPI_MenuItem_RegisterMenu docs): for MenuCode_UserDef, STR# item
+// [1] is the top-level menu's own title ("A2" — see AddOnMain.cpp), not
+// a command, and API_MenuItemRef::itemIndex is literally the STR# item
+// number as written in the .grc — it is NOT renumbered starting from 1
+// for the first real command. So the first actual menu item ("Create
+// Wire (Spline)", STR# [2]) arrives as itemIndex == 2, not 1. Previous
+// values here started at 1 and were off by one against every real
+// click.
+#define MENUITEM_CREATE_WIRE					2
+#define MENUITEM_CONNECT_WIRE_ENDPOINT			3
+#define MENUITEM_CREATE_WIRE_BETWEEN_OBJECTS	4
+#define MENUITEM_SELECT_CIRCUIT_WIRING			5
+#define MENUITEM_SELECT_CIRCUIT_OBJECTS		6
+#define MENUITEM_ABOUT							7
 
 #endif

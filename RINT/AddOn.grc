@@ -6,9 +6,9 @@
 }
 
 // Item [1] is the top-level menu's own title (MenuCode_UserDef in
-// AddOnMain.cpp) — not a command. See the UNVERIFIED note in
-// ResourceIds.hpp about whether the real commands are still numbered
-// 1..6 from here, or shift by one.
+// AddOnMain.cpp) — not a command. Confirmed (see ResourceIds.hpp):
+// itemIndex in the click handler is the STR# item number itself, so
+// commands are numbered [2]..[7] here, matching MENUITEM_* below.
 'STR#' ID_ADDON_MENU "Strings for the Menu" {
 /* [  1] */		"A2"
 /* [  2] */		"Create Wire (Spline)"
