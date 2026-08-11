@@ -55,6 +55,41 @@ if (NOT LP_XML_CONVERTER_FOLDER OR NOT EXISTS "${LP_XML_CONVERTER_FOLDER}")
     Or pass it directly to cmake instead of exporting it:
       cmake -DLP_XML_CONVERTER_FOLDER=\"/path/to/LP_XMLConverter\" ...
 ")
+else ()
+    # The folder existing isn't enough — Tools/CompileResources.py's
+    # LibraryCompiler looks for the actual tool at one specific path
+    # inside it (confirmed by reading that script directly, after
+    # hitting this exact gap: LP_XML_CONVERTER_FOLDER was set, cmake
+    # configured fine, the add-on built and loaded fine, but
+    # ACAPI_LibraryPart_Search couldn't find "Circuit Wire" at runtime).
+    # When the tool isn't found there, CompileResources.py does NOT fail
+    # the build — it prints one yellow "no libpart compiler available"
+    # warning during the build (easy to miss) and silently skips
+    # compiling RINT/BuiltInLibParts.grc, so the add-on ships with no
+    # GDL library part embedded at all. Catch that here instead, loudly,
+    # at configure time.
+    if (WIN32)
+        set (_a2e_libpart_tool "${LP_XML_CONVERTER_FOLDER}/LP_XMLConverter.exe")
+    elseif (EXISTS "${LP_XML_CONVERTER_FOLDER}/LP_XMLConverter.app")
+        set (_a2e_libpart_tool "${LP_XML_CONVERTER_FOLDER}/LP_XMLConverter.app/Contents/MacOS/LP_XMLConverter")
+    else ()
+        set (_a2e_libpart_tool "${LP_XML_CONVERTER_FOLDER}/LP_XMLConverter")
+    endif ()
+
+    if (NOT EXISTS "${_a2e_libpart_tool}")
+        string (APPEND _a2e_setup_errors "
+  LP_XML_CONVERTER_FOLDER is set, but the actual tool isn't where the
+  build expects it:
+    Looked for: '${_a2e_libpart_tool}'
+    LP_XML_CONVERTER_FOLDER should be the direct unzip of the
+    LP_XMLConverter zip, with LP_XMLConverter (or LP_XMLConverter.app
+    on Mac) directly at its top level — not a nested subfolder.
+    If this isn't fixed the build will SILENTLY skip compiling
+    RINT/ACLib/Src/Circuit Wire/ into the add-on: it still builds and
+    loads normally, but ACAPI_LibraryPart_Search will never find
+    \"Circuit Wire\" at runtime.
+")
+    endif ()
 endif ()
 
 if (_a2e_setup_errors)
