@@ -19,7 +19,7 @@ checked against the real template's actual files, not reconstructed.
 
 `Tools/CMakeCommon.cmake` does all DevKit discovery, compiler flags,
 and resource compilation — this repo's own `CMakeLists.txt` just points
-it at `Src/` and `config.json`, the same way the upstream template's
+it at `src/` and `config.json`, the same way the upstream template's
 own `CMakeLists.txt` does for its own example source.
 
 ## What's here
@@ -28,18 +28,18 @@ own `CMakeLists.txt` does for its own example source.
 config.json                  Add-On metadata (name/version/languages) — read by CMake
 CMakeLists.txt               thin wrapper around Tools/CMakeCommon.cmake
 Tools/                       archicad-addon-cmake-tools, git submodule (build logic, not ours)
-Src/APIEnvir.h               DevKit-required boilerplate, copied from upstream
-Src/PrecompiledHeader.hpp    PCH, adapted from upstream's example
-Src/ResourceIds.hpp          resource + menu-item IDs
-Src/AddOnMain.cpp            required Add-On lifecycle entry points
-Src/Wiring/WireEnd.hpp       shared Start/End enum used by both wire backends below
-Src/Wiring/WireElement.*     backend 1: curved wire as a native Spline element
-Src/Wiring/GdlWireElement.*  backend 2: curved wire as a custom GDL object (see RINT/ACLib below)
-Src/Wiring/ElementAnchor.*   reads an element's own placement point — what a wire endpoint tracks
-Src/Wiring/WireConnection.*  attach a wire endpoint to a host element, track its moves, either backend
-Src/Circuit/CircuitProperty.* custom "Circuit ID" property definition + get/set
-Src/Circuit/CircuitSelection.* select-by-circuit-property commands
-Src/Commands/MenuCommands.*  menu command implementations, dispatched from AddOnMain.cpp
+src/APIEnvir.h               DevKit-required boilerplate, copied from upstream
+src/PrecompiledHeader.hpp    PCH, adapted from upstream's example
+src/ResourceIds.hpp          resource + menu-item IDs
+src/AddOnMain.cpp            required Add-On lifecycle entry points
+src/wiring/WireEnd.hpp       shared Start/End enum used by both wire backends below
+src/wiring/WireElement.*     backend 1: curved wire as a native Spline element
+src/wiring/GdlWireElement.*  backend 2: curved wire as a custom GDL object (see RINT/ACLib below)
+src/wiring/ElementAnchor.*   reads an element's own placement point — what a wire endpoint tracks
+src/wiring/WireConnection.*  attach a wire endpoint to a host element, track its moves, either backend
+src/circuit/CircuitProperty.* custom "Circuit ID" property definition + get/set
+src/circuit/CircuitSelection.* select-by-circuit-property commands
+src/commands/MenuCommands.*  menu command implementations, dispatched from AddOnMain.cpp
 RFIX/AddOnFix.grc            language-independent resources (MDID, icon)
 RFIX/Images/                 toolbar icon
 RINT/AddOn.grc               menu strings (English/International)

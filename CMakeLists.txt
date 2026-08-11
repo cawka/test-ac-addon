@@ -2,8 +2,9 @@
 # see README.md for why. All the DevKit-discovery/linking/resource-
 # compilation logic lives in Tools/CMakeCommon.cmake (the
 # archicad-addon-cmake-tools submodule); this file just wires our own
-# Src/ into it, same as the upstream template's own CMakeLists.txt does
-# for its Src/.
+# src/ into it, same as the upstream template's own CMakeLists.txt does
+# for its Src/ (theirs is capitalized; ours isn't — matched to this
+# repo's own naming convention, not a typo).
 
 cmake_minimum_required (VERSION 3.19)
 
@@ -74,9 +75,9 @@ project (${addOnName}-${AC_VERSION})
 
 set (AC_ADDON_FOR_DISTRIBUTION OFF CACHE BOOL "")
 
-set (AddOnSourcesFolder Src)
+set (AddOnSourcesFolder src)
 set (AddOnResourcesFolder .)
 
-set (PCH_HEADER "Src/PrecompiledHeader.hpp")
+set (PCH_HEADER "src/PrecompiledHeader.hpp")
 
 GenerateAddOnProject (CMakeTarget ${AC_VERSION} "${AC_API_DEVKIT_DIR}" ${AddOnSourcesFolder} ${AddOnResourcesFolder} ${AC_ADDON_LANGUAGE} ${addOnDefaultLanguage} ${PCH_HEADER})

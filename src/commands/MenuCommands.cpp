@@ -1,8 +1,8 @@
 #include "MenuCommands.hpp"
 #include "../ResourceIds.hpp"
-#include "../Wiring/WireElement.hpp"
-#include "../Wiring/WireConnection.hpp"
-#include "../Circuit/CircuitSelection.hpp"
+#include "../wiring/WireElement.hpp"
+#include "../wiring/WireConnection.hpp"
+#include "../circuit/CircuitSelection.hpp"
 
 namespace Commands {
 

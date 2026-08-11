@@ -10,7 +10,7 @@ Three requirements drive the module layout:
 
 ## 1. Curved wires — two backends, pick per use case
 
-### 1a. Native Spline — `Src/Wiring/WireElement.*`
+### 1a. Native Spline — `src/wiring/WireElement.*`
 
 `API_SplineType`, not a GDL library part:
 
@@ -33,7 +33,7 @@ constant-radius bends, not just Bezier), the fallback is `API_PolyLineType`
 with `curveType = APICurve_Bezier` per segment — same module, swap the
 element type, same call sites.
 
-### 1b. GDL object — `Src/Wiring/GdlWireElement.*` + `RINT/ACLib/Src/Circuit Wire/`
+### 1b. GDL object — `src/wiring/GdlWireElement.*` + `RINT/ACLib/Src/Circuit Wire/`
 
 A small custom Object library part ("Circuit Wire") with three
 parameters — `endX`, `endY`, `bulge` — and a 2D script
@@ -69,7 +69,7 @@ if a circuit ever needs a wire to route around something.
   `WireElement::SetWireEndpoint`, called from the same
   `OnHostElementChanged` dispatch (section 2 below).
 
-## 2. Live connection to an object — `Src/Wiring/WireConnection.*`
+## 2. Live connection to an object — `src/wiring/WireConnection.*`
 
 Archicad has no built-in "attach line to object" relationship for
 generic elements (that exists for MEP systems, not arbitrary
@@ -112,7 +112,7 @@ This is the module most worth re-checking against the real AC29 headers
 first: the exact notification reason enum and the memo layout are the
 two things most likely to have shifted.
 
-## 3. Circuit property + selection — `Src/Circuit/*`
+## 3. Circuit property + selection — `src/circuit/*`
 
 - `CircuitProperty.cpp` creates one custom property definition
   ("Circuit ID", string or integer, your choice) once per project via
@@ -134,10 +134,10 @@ two things most likely to have shifted.
   circuitId)`) parameterized by element type, since the query logic is
   identical — only which element types you scan differs.
 
-## Menu commands — `Src/Commands/MenuCommands.*`
+## Menu commands — `src/commands/MenuCommands.*`
 
 Thin layer: `MenuCommandHandler` (registered against `ID_ADDON_MENU` in
-`AddOnMain.cpp`) switches on the item index (`Src/ResourceIds.hpp`,
+`AddOnMain.cpp`) switches on the item index (`src/ResourceIds.hpp`,
 kept in sync with the string list in `RINT/AddOn.grc`) and calls
 functions here, which call the modules above. Keeping command dispatch
 separate from the wiring/property logic means the logic is

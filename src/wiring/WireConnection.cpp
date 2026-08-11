@@ -2,7 +2,7 @@
 #include "WireElement.hpp"
 #include "GdlWireElement.hpp"
 #include "ElementAnchor.hpp"
-#include "../Circuit/CircuitProperty.hpp"
+#include "../circuit/CircuitProperty.hpp"
 
 #include <algorithm>
 #include <map>

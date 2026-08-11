@@ -1,6 +1,6 @@
 #include "CircuitSelection.hpp"
 #include "CircuitProperty.hpp"
-#include "../Wiring/WireElement.hpp"
+#include "../wiring/WireElement.hpp"
 
 namespace Circuit {
 
