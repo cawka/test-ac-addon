@@ -48,20 +48,26 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 		return APIERR_BADPARS;
 
 	GSErrCode err = StoreConnection (wireGuid, end, info);
+	A2E_TRACE ("A2E: Connect - StoreConnection returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
 	// Share (or create) the Circuit ID across wire + host.
 	GS::UniString circuitId = Circuit::GetCircuitId (info.hostGuid);
+	A2E_TRACE ("A2E: Connect - GetCircuitId(host) len=%d\n", (int) circuitId.GetLength ());
 	if (circuitId.IsEmpty ())
 		circuitId = Circuit::GetCircuitId (wireGuid);
+	A2E_TRACE ("A2E: Connect - GetCircuitId(wire) len=%d\n", (int) circuitId.GetLength ());
 	if (circuitId.IsEmpty ())
 		circuitId = Circuit::GenerateCircuitId ();
+	A2E_TRACE ("A2E: Connect - circuitId len=%d\n", (int) circuitId.GetLength ());
 
 	err = Circuit::SetCircuitId (wireGuid, circuitId);
+	A2E_TRACE ("A2E: Connect - SetCircuitId(wire) returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 	err = Circuit::SetCircuitId (info.hostGuid, circuitId);
+	A2E_TRACE ("A2E: Connect - SetCircuitId(host) returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
@@ -70,6 +76,7 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 	// AddOnMain.cpp/RestoreAllConnectionObservers; that side still needs
 	// API_NotifyElementType's fields confirmed before it's wired up).
 	err = ACAPI_Element_AttachObserver (info.hostGuid);
+	A2E_TRACE ("A2E: Connect - AttachObserver returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 

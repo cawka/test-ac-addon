@@ -123,10 +123,14 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 
 GS::UniString GenerateCircuitId ()
 {
-	API_Guid newGuid = APINULLGuid;
-	// DEVKIT: confirm the AC29 GUID-generation helper name
-	// (GSGuid2APIGuid (GS::Guid::Generate ()) has been the historical
-	// pattern; APIGuidFromString equivalents also exist).
+	// Was previously always APINULLGuid -- newGuid was declared and
+	// never actually assigned a generated value, so every "new" circuit
+	// ID was the same constant string. Confirmed real pattern (Graphisoft
+	// community example): GS::Guid::Generate() is an instance method, not
+	// a static factory.
+	GS::Guid gsGuid;
+	gsGuid.Generate ();
+	API_Guid newGuid = GSGuid2APIGuid (gsGuid);
 	return GS::UniString ("CKT-") + APIGuidToString (newGuid);
 }
 
@@ -136,7 +140,10 @@ GS::UniString GetCircuitId (const API_Guid& elemGuid)
 		return GS::UniString ();
 
 	API_Property property = {};
-	if (ACAPI_Element_GetPropertyValue (elemGuid, circuitPropertyGuid, property) != NoError)
+	GSErrCode err = ACAPI_Element_GetPropertyValue (elemGuid, circuitPropertyGuid, property);
+	A2E_TRACE ("A2E: GetCircuitId - ACAPI_Element_GetPropertyValue returned %d, isDefault=%d, variantStatus=%d\n",
+		(int) err, (int) property.isDefault, (int) property.value.variantStatus);
+	if (err != NoError)
 		return GS::UniString ();
 
 	if (property.isDefault || property.value.variantStatus != API_VariantStatusNormal)
@@ -148,6 +155,7 @@ GS::UniString GetCircuitId (const API_Guid& elemGuid)
 GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId)
 {
 	GSErrCode err = EnsureCircuitPropertyDefinition ();
+	A2E_TRACE ("A2E: SetCircuitId - EnsureCircuitPropertyDefinition returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
@@ -159,7 +167,9 @@ GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId
 
 	GS::Array<API_Guid> elemGuids;
 	elemGuids.Push (elemGuid);
-	return ACAPI_Property_ModifyPropertyValue (property, elemGuids);
+	err = ACAPI_Property_ModifyPropertyValue (property, elemGuids);
+	A2E_TRACE ("A2E: SetCircuitId - ACAPI_Property_ModifyPropertyValue returned %d\n", (int) err);
+	return err;
 }
 
 } // namespace Circuit
