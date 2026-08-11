@@ -16,8 +16,8 @@
 #include "wiring/WireConnection.hpp"
 
 static const GSResID AddOnInfoID		= ID_ADDON_INFO;
-	static const Int32 AddOnNameID		= 1;
-	static const Int32 AddOnDescriptionID	= 2;
+static const Int32 AddOnNameID			= 1;
+static const Int32 AddOnDescriptionID	= 2;
 
 static const short AddOnMenuID			= ID_ADDON_MENU;
 

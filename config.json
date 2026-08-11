@@ -6,8 +6,8 @@
     ],
     "version": "0.1.0",
     "copyright": {
-        "name": "cawka",
+        "name": "Alex Afanasyev",
         "year": "2026-%Y"
     },
-    "description": "Curved wires that stay attached to connected objects, and circuit-based selection."
+    "description": "Electrical engineering helper module"
 }
