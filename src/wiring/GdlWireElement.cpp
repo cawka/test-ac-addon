@@ -126,13 +126,23 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	if (layerOverridden)
 		element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
-	// Same class of bug as libInd/layer above: GetDefaults leaves
-	// element.object.angle (API_ObjectType::angle, radians) at whatever
-	// the unrelated default object it picked was last rotated to. The
-	// 2D script draws endX/endY as a world-axis-aligned delta from the
-	// placement origin, so the object itself must be unrotated for that
-	// to point the right way.
-	element.object.angle = 0.0;
+
+	// Encode the wire as (origin, angle, length) instead of (origin,
+	// angle=0, world-axis-aligned endX/endY delta). Both encodings are
+	// mathematically equivalent in world coordinates -- Archicad's
+	// project coordinates are independent of the current view's on-
+	// screen rotation, same as in any CAD system, so a rotated view is
+	// not expected to make one encoding correct and the other wrong.
+	// Switching anyway because it removes the "is angle really supposed
+	// to be exactly 0" assumption entirely (GetDefaults leaves
+	// element.object.angle, API_ObjectType::angle in radians, at
+	// whatever the unrelated default object it picked was last rotated
+	// to -- see the libInd/layer note above for the same GetDefaults
+	// leakage pattern) in favor of a directly computed value.
+	const double dx = endPoint.x - startPoint.x;
+	const double dy = endPoint.y - startPoint.y;
+	const double localLength = sqrt (dx * dx + dy * dy);
+	element.object.angle = (localLength > 0.0) ? atan2 (dy, dx) : 0.0;
 
 	// CONFIRMED (real-world usage report, matches what we just saw
 	// directly: post-defaults libInd came back 6970, not our library
@@ -155,13 +165,16 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 		memo.params = addPars;
 	}
 
-	bool setEndX = SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
-	bool setEndY = SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
+	// Local frame now points along the object's own (rotated) X axis by
+	// construction, so the wire's far end is the full length out along
+	// local X, with zero local Y.
+	bool setEndX = SetObjectParam (memo, "endX", localLength);
+	bool setEndY = SetObjectParam (memo, "endY", 0.0);
 
-	A2E_TRACE ("A2E: CreateGdlWire - pre-Create: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) angle=%.6f layerOverridden=%d setEndX=%d setEndY=%d endX=%.4f endY=%.4f guid-before=%s memo.params=%s\n",
+	A2E_TRACE ("A2E: CreateGdlWire - pre-Create: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) angle=%.6f layerOverridden=%d setEndX=%d setEndY=%d localLength=%.4f guid-before=%s memo.params=%s\n",
 		(int) element.header.type.typeID, (int) element.object.libInd, (int) element.header.floorInd,
 		element.object.pos.x, element.object.pos.y, element.object.angle, (int) layerOverridden, (int) setEndX, (int) setEndY,
-		endPoint.x - startPoint.x, endPoint.y - startPoint.y,
+		localLength,
 		(element.header.guid == APINULLGuid) ? "NULL" : "non-null", (memo.params != nullptr) ? "non-null" : "null");
 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
@@ -190,20 +203,35 @@ GSErrCode SetGdlWireEndpoint (const API_Guid& wireGuid, WireEnd movedEnd, const 
 	GetObjectParam (memo, "endX", endX);
 	GetObjectParam (memo, "endY", endY);
 
+	// endX/endY are in the object's own rotated local frame (see
+	// CreateGdlWire), so recovering the far end's world position needs
+	// the same rotation applied: world = origin + R(angle) * local.
 	const API_Coord currentOrigin = element.object.pos;
-	const API_Coord otherEnd { currentOrigin.x + endX, currentOrigin.y + endY };
+	const double cosA = cos (element.object.angle);
+	const double sinA = sin (element.object.angle);
+	const API_Coord otherEnd {
+		currentOrigin.x + endX * cosA - endY * sinA,
+		currentOrigin.y + endX * sinA + endY * cosA
+	};
 
 	const API_Coord newStart = (movedEnd == WireEnd::Start) ? newPoint : currentOrigin;
 	const API_Coord newEnd   = (movedEnd == WireEnd::End)   ? newPoint : otherEnd;
 
+	const double newDx = newEnd.x - newStart.x;
+	const double newDy = newEnd.y - newStart.y;
+	const double newLocalLength = sqrt (newDx * newDx + newDy * newDy);
+
 	element.object.pos = newStart;
-	SetObjectParam (memo, "endX", newEnd.x - newStart.x);
-	SetObjectParam (memo, "endY", newEnd.y - newStart.y);
+	element.object.angle = (newLocalLength > 0.0) ? atan2 (newDy, newDx) : 0.0;
+	SetObjectParam (memo, "endX", newLocalLength);
+	SetObjectParam (memo, "endY", 0.0);
 
 	API_Element mask = {};
 	ACAPI_ELEMENT_MASK_CLEAR (mask);
-	// DEVKIT: set the mask bits for "position" and "parameters changed"
-	// once the AC29 mask field names are confirmed.
+	// DEVKIT: set the mask bits for "position", "angle", and "parameters
+	// changed" once the AC29 mask field names are confirmed -- angle is
+	// now also modified here (it wasn't before this change), so it needs
+	// to be in that set too, not just position.
 
 	err = ACAPI_Element_Change (&element, &mask, &memo, 0, true);
 	ACAPI_DisposeElemMemoHdls (&memo);
