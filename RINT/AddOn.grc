@@ -1,7 +1,7 @@
 #include "ResourceIds.hpp"
 
 'STR#' ID_ADDON_INFO "Add-on Name and Description" {
-/* [  1] */		"Circuit Wiring"
+/* [  1] */		"A2 Electrical"
 /* [  2] */		"Curved wires that stay attached to connected objects, and circuit-based selection."
 }
 

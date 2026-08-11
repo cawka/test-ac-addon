@@ -1,4 +1,4 @@
-# test-ac-addon — Circuit Wiring
+# test-ac-addon — A2 Electrical
 
 Archicad 29 C++ Add-On: curved wires that stay attached to the objects
 they connect, plus selection of a whole circuit (its wiring, or its
@@ -80,8 +80,8 @@ docs/ARCHITECTURE.md         how the three features map onto the API
      Mac, `-G Xcode`. See the upstream README's version tables for
      which toolset/deployment-target pairs with which Archicad
      version.)
-   - Windows produces `CircuitWiring.apx`; Mac produces
-     `CircuitWiring.bundle` (name comes from `config.json`'s
+   - Windows produces `A2 Electrical.apx`; Mac produces
+     `A2 Electrical.bundle` (name comes from `config.json`'s
      `addOnName`).
 5. To use it: Archicad's Add-On Manager, add the built `.apx`/`.bundle`.
    The example/template note applies here too — some interactive-input
