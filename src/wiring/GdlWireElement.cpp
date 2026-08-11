@@ -5,30 +5,45 @@ namespace Wiring {
 
 namespace {
 
-// DEVKIT: API_AddParType's field names (paramName vs. name, real vs.
-// value.real for a Length/RealNum parameter) still need confirming.
-// memo.params itself is likely NOT GS::Array<API_AddParType> as
-// originally guessed here — ACAPI_LibPart_GetParams (confirmed real
-// signature: `GSErrCode ACAPI_LibPart_GetParams (Int32 libInd, double*
-// a, double* b, Int32* addParNum, API_AddParType*** addPars)`) returns
-// the equivalent data as an old-style handle
-// (API_AddParType***, disposed via ACAPI_DisposeAddParHdl), which
-// strongly suggests memo.params is a handle (API_AddParType**) too,
-// not a modern container — needs the real struct definition to
-// implement correctly rather than guess a second time. This is the
-// same kind of struct-layout gap flagged in WireElement.cpp for the
-// Spline backend.
+// CONFIRMED (struct_a_p_i___element_memo.html / struct_a_p_i___add_par_type.html,
+// and a matching real-world usage example): memo.params is a Mac-style
+// handle, API_AddParType**, not a modern container. Element count comes
+// from the handle's byte size, not a separate count field; *memo.params
+// dereferences to the API_AddParType array itself; name is a plain
+// char[API_NameLen] (not GS::UniString) so a plain strcmp is correct;
+// the numeric value for a Length-type param (endX/endY, per
+// paramlist.xml) lives in the value.real member of API_AddParType's
+// value union.
+API_AddParType* FindObjectParam (API_ElementMemo& memo, const char* paramName)
+{
+	if (memo.params == nullptr)
+		return nullptr;
+
+	UInt32 count = BMGetHandleSize ((GSConstHandle) memo.params) / sizeof (API_AddParType);
+	API_AddParType* params = *memo.params;
+	for (UInt32 i = 0; i < count; ++i) {
+		if (strcmp (params[i].name, paramName) == 0)
+			return &params[i];
+	}
+	return nullptr;
+}
 
 bool GetObjectParam (const API_ElementMemo& memo, const char* paramName, double& outValue)
 {
-	(void) memo; (void) paramName; (void) outValue;
-	return false; // TODO
+	API_AddParType* param = FindObjectParam (const_cast<API_ElementMemo&> (memo), paramName);
+	if (param == nullptr)
+		return false;
+	outValue = param->value.real;
+	return true;
 }
 
 bool SetObjectParam (API_ElementMemo& memo, const char* paramName, double value)
 {
-	(void) memo; (void) paramName; (void) value;
-	return false; // TODO
+	API_AddParType* param = FindObjectParam (memo, paramName);
+	if (param == nullptr)
+		return false;
+	param->value.real = value;
+	return true;
 }
 
 // GS::UniString has no "fill this fixed uchar_t buffer" convenience —
