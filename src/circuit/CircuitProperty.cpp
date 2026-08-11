@@ -16,6 +16,22 @@ const GS::UniString kCircuitIdPropertyName ("Circuit ID");
 API_Guid circuitPropertyGroupGuid = APINULLGuid;
 API_Guid circuitPropertyGuid = APINULLGuid;
 
+// Walks one classification item and every descendant (confirmed real
+// function: ACAPI_Classification_GetClassificationItemChildren returns
+// only IMMEDIATE children, not the whole subtree — the earlier version
+// of this code only collected root items, which is why it produced a
+// narrow subset instead of everything).
+void CollectClassificationItemRecursive (const API_Guid& itemGuid, GS::Array<API_Guid>& outGuids)
+{
+	outGuids.Push (itemGuid);
+
+	GS::Array<API_ClassificationItem> children;
+	if (ACAPI_Classification_GetClassificationItemChildren (itemGuid, children) != NoError)
+		return;
+	for (const API_ClassificationItem& child : children)
+		CollectClassificationItemRecursive (child.guid, outGuids);
+}
+
 // ACAPI_Property_CreatePropertyDefinition requires definition.groupGuid
 // to already refer to a valid property group (confirmed real failure
 // mode: APIERR_BADID, "The groupGuid of the parameter did not refer to
@@ -112,21 +128,32 @@ GSErrCode EnsureCircuitPropertyDefinition ()
 	definition.canValueBeEditable = true;
 	definition.defaultValue.basicValue.singleVariant.variant.type = API_PropertyStringValueType;
 
-	// DEVKIT: availability ("The list of classification GUIDs this
-	// property definition is available for") is left empty here.
-	// A prior version of this code tried to replicate the Property
-	// Manager UI's "All" option by enumerating every classification
-	// system's root item (ACAPI_Classification_GetClassificationSystems
-	// + ACAPI_Classification_GetClassificationSystemRootItems) -- that
-	// was WRONG, confirmed directly by the user: it produced a narrow,
-	// incomplete subset, nowhere close to what the UI's "All" actually
-	// sets. The UI's "All" is a single toggle, not visibly an
-	// enumeration, and the real underlying mechanism isn't confirmed
-	// yet -- reverted rather than ship code known to do the wrong thing.
-	// Until this is actually confirmed (real header/doc showing what
-	// "All" writes into availability, or a working code example), set
-	// classification availability by hand in Property Manager after
-	// this creates the definition, same as the user is already doing.
+	// availability ("The list of classification GUIDs this property
+	// definition is available for") needs every classification item,
+	// not just each system's root -- ACAPI_Classification_
+	// GetClassificationSystemRootItems only returns the top of each
+	// tree; ACAPI_Classification_GetClassificationItemChildren returns
+	// only IMMEDIATE children per call (confirmed against the real
+	// Classification Manager docs), so reaching "all" requires walking
+	// down recursively, not just listing roots. The earlier root-only
+	// version was confirmed wrong by direct testing (a narrow subset,
+	// not anything close to all) -- this is that fix, not a guess repeat.
+	GS::Array<API_ClassificationSystem> classificationSystems;
+	GSErrCode classErr = ACAPI_Classification_GetClassificationSystems (classificationSystems);
+	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - GetClassificationSystems returned %d, count=%d\n",
+		(int) classErr, (int) classificationSystems.GetSize ());
+	for (const API_ClassificationSystem& system : classificationSystems) {
+		GS::Array<API_ClassificationItem> rootItems;
+		GSErrCode rootErr = ACAPI_Classification_GetClassificationSystemRootItems (system.guid, rootItems);
+		A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - GetClassificationSystemRootItems returned %d, count=%d\n",
+			(int) rootErr, (int) rootItems.GetSize ());
+		if (rootErr != NoError)
+			continue;
+		for (const API_ClassificationItem& rootItem : rootItems)
+			CollectClassificationItemRecursive (rootItem.guid, definition.availability);
+	}
+	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - total availability entries=%d\n",
+		(int) definition.availability.GetSize ());
 
 	err = ACAPI_Property_CreatePropertyDefinition (definition);
 	A2E_TRACE ("A2E: EnsureCircuitPropertyDefinition - CreatePropertyDefinition returned %d\n", (int) err);
