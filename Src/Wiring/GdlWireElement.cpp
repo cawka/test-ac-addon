@@ -38,7 +38,7 @@ bool SetObjectParam (API_ElementMemo& memo, const char* paramName, double value)
 // typedef rather than merely same-sized).
 void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniString& name)
 {
-	const GS::UniChar::Layout* src = name.ToUStr ();
+	auto src = name.ToUStr ();
 	USize len = name.GetLength ();
 	if (len > destCapacity - 1)
 		len = destCapacity - 1;
