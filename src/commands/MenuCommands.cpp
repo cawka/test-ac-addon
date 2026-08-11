@@ -130,7 +130,21 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	// layer looked up/created once, etc).
 	const short wireLayerIndex = 0;
 
-	API_Guid wireGuid = Wiring::ConnectObjectsWithGdlWire (startHostGuid, endHostGuid, wireLayerIndex);
+	// Same class of bug as the property/group setup calls (see
+	// MenuCommandHandler above): ACAPI_Element_Create and
+	// ACAPI_Property_ModifyPropertyValue (inside ConnectObjectsWithGdlWire
+	// -> Connect) are database-modifying calls and must run inside an
+	// undoable command. GetPoint above is deliberately outside it — it's
+	// interactive UI, not a DB change, and undo context should wrap only
+	// the actual modification.
+	API_Guid wireGuid = APINULLGuid;
+	GSErrCode createErr = ACAPI_CallUndoableCommand ("Create Circuit Wire", [&]() -> GSErrCode {
+		wireGuid = Wiring::ConnectObjectsWithGdlWire (startHostGuid, endHostGuid, wireLayerIndex);
+		return (wireGuid != APINULLGuid) ? NoError : APIERR_GENERAL;
+	});
+	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - CallUndoableCommand returned %d, wireGuid valid=%d\n",
+		(int) createErr, (int) (wireGuid != APINULLGuid));
+
 	return (wireGuid != APINULLGuid) ? NoError : APIERR_GENERAL;
 }
 

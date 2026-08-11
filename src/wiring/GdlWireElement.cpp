@@ -77,6 +77,9 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	element.header.type = API_ObjectID;
 	element.object.libInd = libPart.index;
 
+	A2E_TRACE ("A2E: CreateGdlWire - startPoint=(%.4f,%.4f) endPoint=(%.4f,%.4f) layerIndex(raw arg)=%d\n",
+		startPoint.x, startPoint.y, endPoint.x, endPoint.y, (int) layerIndex);
+
 	API_ElementMemo memo = {};
 	// Was previously calling ACAPI_Element_Create with a memo that had
 	// never been populated (SetObjectParam below was, and still is, a
@@ -84,7 +87,12 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// parameter memo is a known crash pattern (Graphisoft's own
 	// community threads confirm this exact workflow). GetDefaults gives
 	// a validly-shaped default memo to build on instead of an empty one.
-	if (ACAPI_Element_GetDefaults (&element, &memo) != NoError) {
+	GSErrCode defaultsErr = ACAPI_Element_GetDefaults (&element, &memo);
+	A2E_TRACE ("A2E: CreateGdlWire - GetDefaults returned %d, post-defaults: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) memo.params=%s\n",
+		(int) defaultsErr, (int) element.header.type.typeID, (int) element.object.libInd,
+		(int) element.header.floorInd, element.object.pos.x, element.object.pos.y,
+		(memo.params != nullptr) ? "non-null" : "null");
+	if (defaultsErr != NoError) {
 		A2E_TRACE ("A2E: CreateGdlWire - ACAPI_Element_GetDefaults failed\n");
 		return APINULLGuid;
 	}
@@ -99,7 +107,8 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// GetDefaults' own valid default layer with it is the prime suspect
 	// for ACAPI_Element_Create's APIERR_BADINDEX-shaped failure. Only
 	// override when a real, specific layer was actually requested.
-	if (layerIndex != 0)
+	bool layerOverridden = (layerIndex != 0);
+	if (layerOverridden)
 		element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 	element.object.pos = startPoint;
 
@@ -109,8 +118,13 @@ API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, 
 	// geometry. Needs API_ElementMemo::params' real field name/type and
 	// API_AddParType's value-field name confirmed against the AC29
 	// headers.
-	SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
-	SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
+	bool setEndX = SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
+	bool setEndY = SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
+
+	A2E_TRACE ("A2E: CreateGdlWire - pre-Create: typeID=%d libInd=%d floorInd=%d pos=(%.4f,%.4f) layerOverridden=%d setEndX=%d setEndY=%d guid-before=%s memo.params=%s\n",
+		(int) element.header.type.typeID, (int) element.object.libInd, (int) element.header.floorInd,
+		element.object.pos.x, element.object.pos.y, (int) layerOverridden, (int) setEndX, (int) setEndY,
+		(element.header.guid == APINULLGuid) ? "NULL" : "non-null", (memo.params != nullptr) ? "non-null" : "null");
 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
 	ACAPI_DisposeElemMemoHdls (&memo);
