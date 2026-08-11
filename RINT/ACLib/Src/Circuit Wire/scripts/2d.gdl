@@ -14,18 +14,20 @@
 ! C++ side (Src/Wiring/GdlWireElement.cpp) — nothing else in this
 ! script is addon-controlled.
 !
-! GDL: two things below are still flagged rather than asserted as
-! certain, since I don't have the GDL Reference Guide in front of me —
-! check both in a live Archicad before trusting this beyond a quick
-! test:
-!   1. atan2(y,x) as the two-argument arctangent — some GDL versions
-!      may spell this differently or require manual quadrant handling.
-!   2. goto/line-label control flow (used below for early-exit on the
-!      degenerate cases).
+! GDL math functions are NOT C-style — confirmed against the real GDL
+! Reference Guide (gdl.graphisoft.com/reference-guide/functions/):
+! SQR(x) is square root (not sqrt), and ATN(x) is arctangent, but
+! single-argument only (-90 <= ATN(x) <= 90 degrees) — there is no
+! built-in two-argument atan2. The previous version of this script used
+! nonexistent sqrt()/atan2() names; fixed below, with a11/a2's
+! quadrant-correct angle computed manually from ATN since GDL doesn't
+! provide that itself. GDL angles are in degrees throughout (matches
+! ATN's documented -90/90 degree range), so no radian conversion needed
+! anywhere here.
 
 eps = 0.0001
 
-chordLen = sqrt(endX * endX + endY * endY)
+chordLen = SQR(endX * endX + endY * endY)
 
 if chordLen < eps then
 	goto 90
@@ -55,10 +57,47 @@ endif
 cx = ((mx*mx + my*my) * (endY - 0) + (endX*endX + endY*endY) * (0 - my)) / d
 cy = ((mx*mx + my*my) * (0 - endX) + (endX*endX + endY*endY) * (mx - 0)) / d
 
-r = sqrt((cx - 0) * (cx - 0) + (cy - 0) * (cy - 0))
+r = SQR((cx - 0) * (cx - 0) + (cy - 0) * (cy - 0))
 
-a1 = atan2(0 - cy, 0 - cx)
-a2 = atan2(endY - cy, endX - cx)
+! Angle from center to (0,0), quadrant-correct, built from ATN by hand.
+v1x = 0 - cx
+v1y = 0 - cy
+if v1x = 0 then
+	if v1y > 0 then
+		a1 = 90
+	else
+		a1 = -90
+	endif
+else
+	a1 = ATN(v1y / v1x)
+	if v1x < 0 then
+		if v1y >= 0 then
+			a1 = a1 + 180
+		else
+			a1 = a1 - 180
+		endif
+	endif
+endif
+
+! Same, for (endX, endY).
+v2x = endX - cx
+v2y = endY - cy
+if v2x = 0 then
+	if v2y > 0 then
+		a2 = 90
+	else
+		a2 = -90
+	endif
+else
+	a2 = ATN(v2y / v2x)
+	if v2x < 0 then
+		if v2y >= 0 then
+			a2 = a2 + 180
+		else
+			a2 = a2 - 180
+		endif
+	endif
+endif
 
 arc2 cx, cy, r, a1, a2
 
