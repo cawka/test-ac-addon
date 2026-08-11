@@ -23,6 +23,7 @@ GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 		A2E_TRACE ("A2E: Initialize - RestoreAllConnectionObservers returned %d\n", (int) err);
 		return err;
 	});
+	A2E_TRACE ("A2E: MenuCommandHandler - CallUndoableCommand returned %d\n", (int) status);
 	if (status != NoError) {
 		return status;
 	}

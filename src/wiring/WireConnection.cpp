@@ -128,9 +128,22 @@ API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Gui
 
 GSErrCode RestoreAllConnectionObservers ()
 {
-	GSErrCode err = ACAPI_Element_InstallElementObserver (&OnHostElementChanged);
-	if (err != NoError)
-		return err;
+	// Now called from MenuCommandHandler on every click (see
+	// MenuCommands.cpp — needs an ACAPI_CallUndoableCommand context,
+	// which Initialize() doesn't have), not once at load like before —
+	// so this needs its own idempotency guard. Same class of bug as the
+	// property/group ones: ACAPI_Element_InstallElementObserver has no
+	// documented-safe "call it again, it's a no-op" behavior confirmed,
+	// so assume repeat calls can fail and guard against ever making a
+	// second one.
+	static bool installed = false;
+	if (!installed) {
+		GSErrCode err = ACAPI_Element_InstallElementObserver (&OnHostElementChanged);
+		A2E_TRACE ("A2E: RestoreAllConnectionObservers - InstallElementObserver returned %d\n", (int) err);
+		if (err != NoError)
+			return err;
+		installed = true;
+	}
 
 	// TODO: enumerate all wire elements — both native Splines
 	// (API_SplineID) and placed "Circuit Wire" objects
