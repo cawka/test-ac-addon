@@ -5,10 +5,18 @@ namespace Wiring {
 namespace {
 
 // DEVKIT: API_AddParType's field names (paramName vs. name, real vs.
-// value.real for a Length/RealNum parameter) and how memo.params is
-// typed (GS::Array<API_AddParType>* vs. a raw handle) both need
-// confirming against the AC29 headers — this is the same kind of
-// struct-layout gap flagged in WireElement.cpp for the Spline backend.
+// value.real for a Length/RealNum parameter) still need confirming.
+// memo.params itself is likely NOT GS::Array<API_AddParType> as
+// originally guessed here — ACAPI_LibPart_GetParams (confirmed real
+// signature: `GSErrCode ACAPI_LibPart_GetParams (Int32 libInd, double*
+// a, double* b, Int32* addParNum, API_AddParType*** addPars)`) returns
+// the equivalent data as an old-style handle
+// (API_AddParType***, disposed via ACAPI_DisposeAddParHdl), which
+// strongly suggests memo.params is a handle (API_AddParType**) too,
+// not a modern container — needs the real struct definition to
+// implement correctly rather than guess a second time. This is the
+// same kind of struct-layout gap flagged in WireElement.cpp for the
+// Spline backend.
 
 bool GetObjectParam (const API_ElementMemo& memo, const char* paramName, double& outValue)
 {
@@ -51,31 +59,55 @@ void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniStr
 
 API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, short layerIndex)
 {
+	DBPrintf ("A2E: CreateGdlWire start\n");
+
 	API_LibPart libPart = {};
 	FillFixedUniBuffer (libPart.docu_UName,
 		sizeof (libPart.docu_UName) / sizeof (libPart.docu_UName[0]),
 		kGdlWireLibPartName);
 
-	if (ACAPI_LibraryPart_Search (&libPart, false) != NoError)
+	if (ACAPI_LibraryPart_Search (&libPart, false) != NoError) {
+		DBPrintf ("A2E: CreateGdlWire - ACAPI_LibraryPart_Search failed (library part not found)\n");
 		return APINULLGuid;
+	}
+	DBPrintf ("A2E: CreateGdlWire - found library part, index=%d\n", (int) libPart.index);
 
 	API_Element element = {};
 	element.header.type = API_ObjectID;
-	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
-	element.object.pos = startPoint;
 	element.object.libInd = libPart.index;
 
 	API_ElementMemo memo = {};
-	// DEVKIT: fetch the library part's default parameter set first
-	// (ACAPI_Element_GetDefaults or ACAPI_LibPart_GetParams) and copy it
-	// into memo.params before overriding endX/endY below — an Object
-	// can't be created with only these two parameters populated, it
-	// needs the rest of the part's declared parameter list too.
+	// Was previously calling ACAPI_Element_Create with a memo that had
+	// never been populated (SetObjectParam below was, and still is, a
+	// no-op stub) — creating an Object with a completely empty
+	// parameter memo is a known crash pattern (Graphisoft's own
+	// community threads confirm this exact workflow). GetDefaults gives
+	// a validly-shaped default memo to build on instead of an empty one.
+	if (ACAPI_Element_GetDefaults (&element, &memo) != NoError) {
+		DBPrintf ("A2E: CreateGdlWire - ACAPI_Element_GetDefaults failed\n");
+		return APINULLGuid;
+	}
+
+	// GetDefaults may have overwritten these with generic Object
+	// defaults — reassert what this specific wire needs.
+	element.header.type = API_ObjectID;
+	element.object.libInd = libPart.index;
+	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
+	element.object.pos = startPoint;
+
+	// DEVKIT: still a no-op stub (see above) — the wire will be created
+	// at the library part's default endX/endY (likely 0,0, i.e.
+	// zero-length) until this is implemented, not a crash but wrong
+	// geometry. Needs API_ElementMemo::params' real field name/type and
+	// API_AddParType's value-field name confirmed against the AC29
+	// headers.
 	SetObjectParam (memo, "endX", endPoint.x - startPoint.x);
 	SetObjectParam (memo, "endY", endPoint.y - startPoint.y);
 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
 	ACAPI_DisposeElemMemoHdls (&memo);
+
+	DBPrintf ("A2E: CreateGdlWire - ACAPI_Element_Create returned %d\n", (int) err);
 
 	return err == NoError ? element.header.guid : APINULLGuid;
 }
