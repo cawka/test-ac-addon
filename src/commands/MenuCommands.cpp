@@ -76,28 +76,44 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	API_Guid endHostGuid = APINULLGuid;
 
 	// There's no dedicated "click an element" call — confirmed against
-	// the real AC29 docs (Group: User Input) there isn't one. The actual
-	// pattern is ACAPI_UserInput_GetPoint: its output struct carries a
-	// `guid` field ("Guid of the clicked element"), APINULLGuid if the
-	// click didn't land on one.
+	// the real AC29 docs (Group: User Input) there isn't one. The
+	// pattern is ACAPI_UserInput_GetPoint. CONFIRMED against the real
+	// function doc (not just the struct's generic per-field doc, which
+	// is what misled the previous version of this code): "the result is
+	// returned in the pos and neig fields of pointInfo" — the top-level
+	// pointInfo.guid is NOT what this function fills in, despite the
+	// struct comment calling it "Guid of the clicked element" (that
+	// comment describes the struct's use across other functions that
+	// share it). The actual clicked-element guid is pointInfo.neig.guid
+	// (API_Neig::guid, "Guid of the element"). This is why the start
+	// click always fell through to "failed to get start object" even on
+	// a dead-on click.
 	API_GetPointType pointInfo = {};
 	CHTruncate ("Click the start object", pointInfo.prompt, sizeof (pointInfo.prompt));
 	GSErrCode err = ACAPI_UserInput_GetPoint (&pointInfo);
-	if (err != NoError)
+	if (err != NoError) {
+		A2E_TRACE ("A2E: ACAPI_UserInput_GetPoint failed\n");
 		return err;
-	startHostGuid = pointInfo.guid;
-	if (startHostGuid == APINULLGuid)
+	}
+	startHostGuid = pointInfo.neig.guid;
+	if (startHostGuid == APINULLGuid) {
+		A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - failed to get start object\n");
 		return APIERR_BADPARS; // clicked empty space, not an element
+	}
 	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - got start object\n");
 
 	pointInfo = {};
 	CHTruncate ("Click the end object", pointInfo.prompt, sizeof (pointInfo.prompt));
 	err = ACAPI_UserInput_GetPoint (&pointInfo);
-	if (err != NoError)
+	if (err != NoError) {
+		A2E_TRACE ("A2E: ACAPI_UserInput_GetPoint failed\n");
 		return err;
-	endHostGuid = pointInfo.guid;
-	if (endHostGuid == APINULLGuid)
+	}
+	endHostGuid = pointInfo.neig.guid;
+	if (endHostGuid == APINULLGuid) {
+		A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - failed to get end object\n");
 		return APIERR_BADPARS;
+	}
 	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - got end object, calling ConnectObjectsWithGdlWire\n");
 
 	// DEVKIT: layer index hardcoded to 0 (current/active layer) for the
