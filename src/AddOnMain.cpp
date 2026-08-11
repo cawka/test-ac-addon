@@ -9,6 +9,7 @@
 #include "RS.hpp"
 
 #include "GitVersion.hpp"
+#include "Debug.hpp"
 
 #include "ResourceIds.hpp"
 #include "commands/MenuCommands.hpp"
@@ -33,6 +34,7 @@ API_AddonType CheckEnvironment (API_EnvirParams* envir)
 
 GSErrCode RegisterInterface (void)
 {
+	A2E_TRACE ("A2E: RegisterInterface start\n");
 #ifdef ServerMainVers_2700
 	// MenuCode_UserDef + a menu-title string as the first ID_ADDON_MENU
 	// entry (RINT/AddOn.grc) makes this add-on register its own
@@ -50,7 +52,9 @@ GSErrCode RegisterInterface (void)
 	// included one; we always do, so that whole detection dance was
 	// just one more thing that could silently come back false and skip
 	// registration with no error.
-	return ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
+	err = ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
+	A2E_TRACE ("A2E: RegisterInterface - RegisterBuiltInLibrary returned %d\n", (int) err);
+	return err;
 #else
 	return ACAPI_Register_Menu (AddOnMenuID, 0, MenuCode_Tools, MenuFlag_Default);
 #endif
@@ -58,21 +62,26 @@ GSErrCode RegisterInterface (void)
 
 GSErrCode Initialize (void)
 {
+	A2E_TRACE ("A2E: Initialize start\n");
+
 	GSErrCode err;
 #ifdef ServerMainVers_2700
 	err = ACAPI_MenuItem_InstallMenuHandler (AddOnMenuID, Commands::MenuCommandHandler);
 #else
 	err = ACAPI_Install_MenuHandler (AddOnMenuID, Commands::MenuCommandHandler);
 #endif
+	A2E_TRACE ("A2E: Initialize - InstallMenuHandler returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
 	// Our own setup, on top of the template:
 	err = Circuit::EnsureCircuitPropertyDefinition ();
+	A2E_TRACE ("A2E: Initialize - EnsureCircuitPropertyDefinition returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
 	err = Wiring::RestoreAllConnectionObservers ();
+	A2E_TRACE ("A2E: Initialize - RestoreAllConnectionObservers returned %d\n", (int) err);
 	if (err != NoError)
 		return err;
 
@@ -84,6 +93,7 @@ GSErrCode Initialize (void)
 	// reconfigure.
 	ACAPI_WriteReport (GS::UniString ("A2 Electrical loaded — build " A2E_GIT_VERSION), false);
 
+	A2E_TRACE ("A2E: Initialize done\n");
 	return NoError;
 }
 

@@ -1,6 +1,7 @@
 #include "MenuCommands.hpp"
 #include "../ResourceIds.hpp"
 #include "GitVersion.hpp"
+#include "Debug.hpp"
 #include "../wiring/WireElement.hpp"
 #include "../wiring/WireConnection.hpp"
 #include "../circuit/CircuitSelection.hpp"
@@ -9,7 +10,7 @@ namespace Commands {
 
 GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 {
-	DBPrintf ("A2E: MenuCommandHandler menuResID=%d itemIndex=%d\n",
+	A2E_TRACE ("A2E: MenuCommandHandler menuResID=%d itemIndex=%d\n",
 		(int) menuParams->menuItemRef.menuResID, (int) menuParams->menuItemRef.itemIndex);
 
 	switch (menuParams->menuItemRef.menuResID) {
@@ -51,7 +52,7 @@ GSErrCode ConnectWireEndpointCommand ()
 
 GSErrCode CreateWireBetweenObjectsCommand ()
 {
-	DBPrintf ("A2E: CreateWireBetweenObjectsCommand start\n");
+	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand start\n");
 
 	API_Guid startHostGuid = APINULLGuid;
 	API_Guid endHostGuid = APINULLGuid;
@@ -69,7 +70,7 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	startHostGuid = pointInfo.guid;
 	if (startHostGuid == APINULLGuid)
 		return APIERR_BADPARS; // clicked empty space, not an element
-	DBPrintf ("A2E: CreateWireBetweenObjectsCommand - got start object\n");
+	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - got start object\n");
 
 	pointInfo = {};
 	CHTruncate ("Click the end object", pointInfo.prompt, sizeof (pointInfo.prompt));
@@ -79,7 +80,7 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	endHostGuid = pointInfo.guid;
 	if (endHostGuid == APINULLGuid)
 		return APIERR_BADPARS;
-	DBPrintf ("A2E: CreateWireBetweenObjectsCommand - got end object, calling ConnectObjectsWithGdlWire\n");
+	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - got end object, calling ConnectObjectsWithGdlWire\n");
 
 	// DEVKIT: layer index hardcoded to 0 (current/active layer) for the
 	// skeleton — swap in whatever layer selection policy you want
