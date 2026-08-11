@@ -163,6 +163,10 @@ GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId
 	property.definition.guid = circuitPropertyGuid;
 	property.isDefault = false;
 	property.value.variantStatus = API_VariantStatusNormal;
+	// variant is a tagged union -- .type must match which member is set
+	// (mirrors EnsureCircuitPropertyDefinition's defaultValue, which sets
+	// this correctly; this call didn't, leaving it zero-initialized).
+	property.value.singleVariant.variant.type = API_PropertyStringValueType;
 	property.value.singleVariant.variant.uniStringValue = circuitId;
 
 	GS::Array<API_Guid> elemGuids;
