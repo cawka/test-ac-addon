@@ -145,7 +145,24 @@ GSErrCode CreateWireBetweenObjectsCommand ()
 	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - CallUndoableCommand returned %d, wireGuid valid=%d\n",
 		(int) createErr, (int) (wireGuid != APINULLGuid));
 
-	return (wireGuid != APINULLGuid) ? NoError : APIERR_GENERAL;
+	if (wireGuid == APINULLGuid)
+		return APIERR_GENERAL;
+
+	// Deliberately outside the undoable command above: attaching a
+	// notification observer is a session-level subscription, not
+	// project content, and running it inside the same undoable command
+	// as the actual database writes was the suspected cause of it
+	// failing (see AttachHostObserver's doc comment in
+	// WireConnection.hpp). Non-fatal here on purpose too — if it fails,
+	// the wire itself is still fully created and connected; only live
+	// move-tracking is affected, and that's worth losing rather than
+	// reporting the whole command as failed.
+	GSErrCode startObsErr = Wiring::AttachHostObserver (startHostGuid);
+	GSErrCode endObsErr = Wiring::AttachHostObserver (endHostGuid);
+	A2E_TRACE ("A2E: CreateWireBetweenObjectsCommand - AttachHostObserver(start)=%d AttachHostObserver(end)=%d\n",
+		(int) startObsErr, (int) endObsErr);
+
+	return NoError;
 }
 
 GSErrCode SelectCircuitWiringCommand ()

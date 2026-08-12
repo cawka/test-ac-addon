@@ -71,29 +71,19 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 	if (err != NoError)
 		return err;
 
-	// Per-element attach — pairs with the one-time global handler install
-	// via ACAPI_Element_InstallElementObserver (see
-	// AddOnMain.cpp/RestoreAllConnectionObservers; that side still needs
-	// API_NotifyElementType's fields confirmed before it's wired up).
-	//
-	// Deliberately NOT fatal: confirmed the hard way that a real wire +
-	// property write can succeed completely and then get thrown away
-	// anyway, because this whole thing runs inside one
-	// ACAPI_CallUndoableCommand and any non-NoError return here rolls
-	// back everything already done, including the successful element
-	// creation. Attaching an observer to the same host more than once
-	// (very plausible across repeated testing against the same file/
-	// objects) is a known real gotcha for this API and the leading
-	// suspect for the observed failure. Live move-tracking not working
-	// yet is a much smaller problem than "the wire silently never gets
-	// created" — log and continue instead of discarding real work over
-	// a non-critical side registration.
-	err = ACAPI_Element_AttachObserver (info.hostGuid);
-	A2E_TRACE ("A2E: Connect - AttachObserver returned %d (non-fatal)\n", (int) err);
-
+	// Observer attach moved out to AttachHostObserver (see header) —
+	// call it separately, after whatever undoable command wraps this
+	// Connect() call has committed.
 	hostToWires[APIGuid2GSGuid (info.hostGuid)].push_back ({ wireGuid, end });
 
 	return NoError;
+}
+
+GSErrCode AttachHostObserver (const API_Guid& hostGuid)
+{
+	GSErrCode err = ACAPI_Element_AttachObserver (hostGuid);
+	A2E_TRACE ("A2E: AttachHostObserver - AttachObserver returned %d\n", (int) err);
+	return err;
 }
 
 GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end)

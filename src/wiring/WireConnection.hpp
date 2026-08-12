@@ -18,10 +18,21 @@ struct ConnectionInfo {
 
 // Attaches wireGuid's given endpoint to hostGuid, persists the
 // connection (so it survives save/reload — see .cpp for where it's
-// stored), stamps both elements with a shared Circuit ID (see
-// Circuit/CircuitProperty.hpp), and installs the observer that keeps
-// the wire glued to the host from then on.
+// stored), and stamps both elements with a shared Circuit ID (see
+// Circuit/CircuitProperty.hpp). Does NOT attach the live-move observer
+// — see AttachHostObserver below for why that's kept separate.
 GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
+
+// Attaches the per-element observer that makes OnHostElementChanged
+// fire when hostGuid moves. Deliberately callable on its own, outside
+// any ACAPI_CallUndoableCommand: unlike Connect() above (real database
+// writes: element creation, property values), attaching a notification
+// observer is a session-level subscription, not project content, and
+// wrapping it inside the same undoable command as the database writes
+// was suspected to be why it kept failing — call this after the
+// command that creates/connects the wire has already committed, not
+// inside it.
+GSErrCode AttachHostObserver (const API_Guid& hostGuid);
 
 // Removes the connection and the observer. Does not touch the
 // element's Circuit ID — that's a circuit-membership marker, not a
