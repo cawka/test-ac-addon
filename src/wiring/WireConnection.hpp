@@ -4,69 +4,74 @@
 #include "ACAPinc.h"
 #include "WireEnd.hpp"
 
+#include <map>
+#include <utility>
+#include <vector>
+
 namespace Wiring {
 
 // Describes how a wire endpoint is anchored to a host element. v1
-// anchoring is deliberately just "this object" — the endpoint tracks
-// the host's own placement origin (see ElementAnchor.hpp), not a
-// specific hotspot/edge on it. That's what makes "click the start
-// object, click the end object" a complete connect gesture with no
-// further picking needed.
+// anchoring is "this object" — the endpoint tracks the host's own
+// placement origin (see ElementAnchor), not a specific hotspot/edge.
 struct ConnectionInfo {
 	API_Guid	hostGuid = APINULLGuid;
 };
 
-// Attaches wireGuid's given endpoint to hostGuid, persists the
-// connection (so it survives save/reload — see .cpp for where it's
-// stored), and stamps both elements with a shared Circuit ID (see
-// Circuit/CircuitProperty.hpp). Does NOT attach the live-move observer
-// — see AttachHostObserver below for why that's kept separate.
-GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
+// Tracks which wires are anchored to which host elements, and keeps
+// wire endpoints glued to their hosts via the Notification Manager
+// (ACAPI_Element_InstallElementObserver, installed once from
+// AddOnMain.cpp's Initialize(), plus a per-host AttachHostObserver
+// call).
+class ConnectionManager {
+public:
+	ConnectionManager () = delete;
 
-// Attaches the per-element observer that makes OnHostElementChanged
-// fire when hostGuid moves. Deliberately callable on its own, outside
-// any ACAPI_CallUndoableCommand: unlike Connect() above (real database
-// writes: element creation, property values), attaching a notification
-// observer is a session-level subscription, not project content, and
-// wrapping it inside the same undoable command as the database writes
-// was suspected to be why it kept failing — call this after the
-// command that creates/connects the wire has already committed, not
-// inside it.
-GSErrCode AttachHostObserver (const API_Guid& hostGuid);
+	// Attaches wireGuid's given endpoint to hostGuid: persists the
+	// connection and stamps both elements with a shared Circuit ID (see
+	// Circuit::PropertyManager). Does not attach the live-move observer
+	// — see AttachHostObserver.
+	static GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
 
-// Removes the connection and the observer. Does not touch the
-// element's Circuit ID — that's a circuit-membership marker, not a
-// per-endpoint attachment, and other connections may still rely on it.
-GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end);
+	// Attaches the per-element observer that makes OnHostElementChanged
+	// fire when hostGuid moves. Deliberately callable on its own,
+	// outside any ACAPI_CallUndoableCommand — a notification
+	// subscription isn't a database write and doesn't need undo context.
+	static GSErrCode AttachHostObserver (const API_Guid& hostGuid);
 
-// The "click start object, click end object" gesture in one call:
-// places a new GDL "Circuit Wire" (see GdlWireElement.hpp) between
-// their current anchor points, then connects both of its ends via
-// Connect() above so it tracks either host from then on. This is what
-// Commands::CreateWireBetweenObjectsCommand calls once it has both
-// clicked GUIDs. Returns the new wire's GUID, or APINULLGuid on
-// failure (nothing is left half-created — see .cpp).
-API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Guid& endHostGuid, short layerIndex);
+	// Removes the connection and detaches the observer if hostGuid has
+	// no other wires left. Does not touch the element's Circuit ID —
+	// that's circuit membership, not a per-endpoint attachment.
+	static GSErrCode Disconnect (const API_Guid& wireGuid, WireEnd end);
 
-// Re-installs observers for every stored connection. Call from
-// Initialize() and after undo/redo — see docs/ARCHITECTURE.md, section 2.
-GSErrCode RestoreAllConnectionObservers ();
+	// The "click start object, click end object" gesture in one call:
+	// places a new GDL wire (see GdlWireElement) between their current
+	// anchor points and connects both ends. Returns the new wire's GUID,
+	// or APINULLGuid on failure.
+	static API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Guid& endHostGuid, short layerIndex);
 
-// The single global handler installed once via
-// ACAPI_Element_InstallElementObserver (see RestoreAllConnectionObservers)
-// — signature matches APIElementEventHandlerProc. Archicad calls this
-// for every element that's been ACAPI_Element_AttachObserver'd,
-// regardless of which one; elemType->elemHead.guid says which. Recomputes
-// and pushes new geometry for every wire endpoint anchored to it —
-// dispatches to WireElement::SetWireEndpoint or
-// GdlWireElement::SetGdlWireEndpoint depending on which backend that
-// particular wire is.
-//
-// DEVKIT: API_ElementDBEventID (elemType->notifID) isn't filtered on
-// yet — this reacts to every notification for an attached element
-// (move, delete, ...) alike. Worth narrowing once the enum's members
-// are confirmed, at least to skip redundant recomputes.
-GSErrCode OnHostElementChanged (const API_NotifyElementType* elemType);
+	// Re-installs observers for every stored connection. Call after
+	// undo/redo — see docs/ARCHITECTURE.md.
+	// TODO: unimplemented — needs to enumerate existing wire elements
+	// (both backends) and re-attach their host observers.
+	static GSErrCode RestoreAllConnectionObservers ();
+
+	// The global handler passed to ACAPI_Element_InstallElementObserver.
+	// Archicad calls this for every element that's been
+	// AttachHostObserver'd; recomputes and pushes new geometry for every
+	// wire endpoint anchored to whichever element changed.
+	// TODO: elemType->notifID isn't filtered on yet — this reacts to
+	// every notification (move, delete, ...) alike.
+	static GSErrCode OnHostElementChanged (const API_NotifyElementType* elemType);
+
+private:
+	static ConnectionInfo LoadConnection (const API_Guid& wireGuid, WireEnd end);
+	static GSErrCode StoreConnection (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
+
+	// In-memory index: host GUID -> wires anchored to it. Rebuilt from
+	// persisted connection data at startup (see StoreConnection), so
+	// this cache is never itself the source of truth.
+	static inline std::map<GS::Guid, std::vector<std::pair<API_Guid, WireEnd>>> hostToWires;
+};
 
 } // namespace Wiring
 

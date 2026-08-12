@@ -2,7 +2,7 @@
 
 namespace Wiring {
 
-API_Coord GetElementAnchorPoint (const API_Guid& elemGuid)
+API_Coord ElementAnchor::GetPoint (const API_Guid& elemGuid)
 {
 	API_Element element = {};
 	element.header.guid = elemGuid;
@@ -16,8 +16,6 @@ API_Coord GetElementAnchorPoint (const API_Guid& elemGuid)
 		case API_LampID:
 			return element.lamp.pos;
 		default:
-			// TODO: add cases as wires start connecting to other
-			// element types (see DEVKIT note in the header).
 			return API_Coord { 0.0, 0.0 };
 	}
 }

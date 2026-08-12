@@ -5,22 +5,32 @@
 
 namespace Commands {
 
-// Registered against each of the ID_ADDON_MENU_* resources (see
+// Dispatches Archicad menu clicks to this add-on's commands. One
+// handler is registered per ID_ADDON_MENU_* resource (see
 // ResourceIds.hpp) via ACAPI_MenuItem_InstallMenuHandler in
-// AddOnMain.cpp's Initialize() (menu registration itself happens in
-// RegisterInterface(), also there) — mirroring where
-// GRAPHISOFT/archicad-addon-cmake's own template does both, rather than
-// wrapping them here.
-GSErrCode MenuCommandHandler (const API_MenuParams* menuParams);
+// AddOnMain.cpp's Initialize().
+class MenuCommandDispatcher {
+public:
+	MenuCommandDispatcher () = delete;
 
-// Menu item implementations. Kept separate from MenuCommandHandler's
-// dispatch so they're callable directly (tests, a future palette, ...).
-GSErrCode CreateWireCommand ();
-GSErrCode ConnectWireEndpointCommand ();
-GSErrCode CreateWireBetweenObjectsCommand ();
-GSErrCode SelectCircuitWiringCommand ();
-GSErrCode SelectCircuitObjectsCommand ();
-GSErrCode AboutCommand ();
+	static GSErrCode Handle (const API_MenuParams* menuParams);
+
+private:
+	// TODO: unimplemented — interactive node-by-node curve input
+	// (click to place nodes, drag Bezier handles, Enter/Esc to finish).
+	static GSErrCode CreateWire ();
+
+	// TODO: unimplemented — for the native-Spline backend: click a wire
+	// endpoint, then a host element, and call
+	// Wiring::ConnectionManager::Connect. The GDL backend doesn't need
+	// this (see CreateWireBetweenObjects).
+	static GSErrCode ConnectWireEndpoint ();
+
+	static GSErrCode CreateWireBetweenObjects ();
+	static GSErrCode SelectCircuitWiring ();
+	static GSErrCode SelectCircuitObjects ();
+	static GSErrCode About ();
+};
 
 } // namespace Commands
 

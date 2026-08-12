@@ -12,10 +12,7 @@ are copied and adapted from
 (MIT licensed) and its submodule,
 **[GRAPHISOFT/archicad-addon-cmake-tools](https://github.com/GRAPHISOFT/archicad-addon-cmake-tools)**
 (vendored here as `Tools/`) — Graphisoft's own, actively maintained,
-public CMake template for Archicad Add-Ons. An earlier version of this
-skeleton reconstructed all of this from memory instead, which got
-several things wrong (see git history if curious); everything below is
-checked against the real template's actual files, not reconstructed.
+public CMake template for Archicad Add-Ons.
 
 `Tools/CMakeCommon.cmake` does all DevKit discovery, compiler flags,
 and resource compilation — this repo's own `CMakeLists.txt` just points
@@ -111,48 +108,39 @@ docs/ARCHITECTURE.md         how the three features map onto the API
 
 Two interchangeable wire backends, both 2D-only for now:
 
-- **Native Spline** (`WireElement.*`) — a real `API_SplineType`
-  element, so Archicad's own edit/undo/snap machinery applies for free,
-  and it can have any number of curve nodes. No placement UI is wired
-  up yet (see `Commands::CreateWireCommand`) — this backend is the one
-  to extend if/when you want interactive multi-node curve drawing.
-- **GDL object** (`GdlWireElement.*`, library part in
-  `RINT/ACLib/Src/Circuit Wire/`) — a small custom Object with
-  `endX`/`endY`/`bulge` parameters; the 2D script draws a single
-  curved (or straight) line from its origin to the far end. Always
-  exactly two points, which is what makes the click-click placement
-  flow below possible. Shipped as a **built-in** library part (baked
-  into the add-on bundle, auto-registered at startup — see
-  `HasBuiltInLibPart`/`RegisterInterface` in `AddOnMain.cpp`), not
-  something you add to a project library by hand.
-  `Commands::CreateWireBetweenObjectsCommand` is wired up end-to-end:
-  click a start object, click an end object, and it places one of
-  these directly between their anchor points.
+- **Native Spline** (`Wiring::SplineWireElement`) — a real
+  `API_SplineType` element, so Archicad's own edit/undo/snap machinery
+  applies for free, and it can have any number of curve nodes.
+  Unimplemented — see the TODOs on the class.
+- **GDL object** (`Wiring::GdlWireElement`, library part in
+  `RINT/ACLib/Src/Circuit Wire/`) — a custom Object with
+  `endX`/`endY`/`bulge`/`linePen`/`lineType` parameters; the 2D script
+  draws a single curved (or straight) line from its origin to the far
+  end. Always exactly two points, which is what makes the click-click
+  placement flow below possible. Shipped as a **built-in** library part
+  (baked into the add-on bundle, auto-registered at startup — see
+  `RegisterInterface` in `AddOnMain.cpp`), not something added to a
+  project library by hand.
+  `Commands::MenuCommandDispatcher::CreateWireBetweenObjects` is wired
+  up end-to-end: click a start object, click an end object, and it
+  places one of these directly between their anchor points.
 - **Live connection to objects** — a wire endpoint is anchored to a
-  host element's own placement origin (`ElementAnchor.cpp` —
+  host element's own placement origin (`Wiring::ElementAnchor` —
   deliberately not a specific hotspot/edge, to keep "click an object"
-  a complete connect gesture). `WireConnection.cpp` registers an
-  element observer (`ACAPI_Notification_InstallElementObserver`) on
-  the host; when it fires, `OnHostElementChanged` recomputes and pushes
-  new geometry through whichever backend that wire uses
-  (`WireElement::SetWireEndpoint` or `GdlWireElement::SetGdlWireEndpoint`).
-- **Circuit selection** — a custom property definition ("Circuit ID")
-  is created once via `ACAPI_Property_CreatePropertyDefinition` and
-  written onto every wire/object as it's connected, by either backend.
-  Selection commands in `CircuitSelection.cpp` filter elements by that
-  property value and call `ACAPI_Selection_Select`.
+  a complete connect gesture). `Wiring::ConnectionManager` installs a
+  global element observer (`ACAPI_Element_InstallElementObserver`, from
+  `AddOnMain.cpp`'s `Initialize()`) plus a per-host
+  `AttachHostObserver`; when a host moves, `OnHostElementChanged`
+  recomputes and pushes new geometry through whichever backend that
+  wire uses.
+- **Circuit selection** — `Circuit::PropertyManager` owns a custom
+  property definition ("Circuit ID"), written onto every wire/object as
+  it's connected. `Circuit::Selection` filters elements by that
+  property value and calls `ACAPI_Selection_Select`.
 
-## What's still a guess, and why it's a much smaller list now
+## Known gaps
 
-The build system, entry points (`CheckEnvironment`/`RegisterInterface`/
-`Initialize`/`FreeData`), menu registration calls, and the GDL
-library-part file format are now copied from real, working Graphisoft
-source — not reconstructed. What's *not* covered by that public
-template, because it's inside the proprietary DevKit headers I still
-don't have direct access to, is the business logic that touches
-element/property/notification internals: `API_SplineType`'s exact
-field layout, `API_AddParType`'s field names for reading/writing GDL
-object parameters, the exact `ACAPI_Notification_*`/
-`ACAPI_UserInput_ClickAnElement` signatures, and similar. Every one of
-those is still flagged with a `// DEVKIT:` comment at the point it's
-used — that's the honest remaining gap, not the whole skeleton.
+See `docs/ARCHITECTURE.md` and the `// TODO:`/`// NOTE:` comments at
+each point they apply — notably: the Spline backend's geometry code,
+connection persistence across save/reload, observer re-attachment
+after undo/redo, and element enumeration for circuit selection.

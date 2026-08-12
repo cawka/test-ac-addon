@@ -5,18 +5,26 @@
 
 namespace Circuit {
 
-// Selects every wire (Spline) element carrying the given Circuit ID.
-GSErrCode SelectCircuitWiring (const GS::UniString& circuitId);
+// Selection queries driven by Circuit ID membership (see PropertyManager).
+class Selection {
+public:
+	Selection () = delete;
 
-// Selects every non-wire element (Objects, Lamps, ...) carrying the
-// given Circuit ID — i.e. everything on the circuit except the wiring
-// itself.
-GSErrCode SelectCircuitObjects (const GS::UniString& circuitId);
+	// Selects every wire element carrying the given Circuit ID.
+	static GSErrCode SelectWiring (const GS::UniString& circuitId);
 
-// Convenience: reads the Circuit ID off whatever's currently selected
-// (first selected element that has one) and returns it, for driving
-// "select the rest of this circuit" from a single click.
-GS::UniString CircuitIdOfSelection ();
+	// Selects every non-wire element carrying the given Circuit ID —
+	// i.e. everything on the circuit except the wiring itself.
+	static GSErrCode SelectObjects (const GS::UniString& circuitId);
+
+	// Reads the Circuit ID off whatever's currently selected (first
+	// selected element that has one), for "select the rest of this
+	// circuit" from a single click.
+	static GS::UniString CircuitIdOfSelection ();
+
+private:
+	static GSErrCode SelectByCircuitId (const GS::UniString& circuitId, bool keepWires);
+};
 
 } // namespace Circuit
 

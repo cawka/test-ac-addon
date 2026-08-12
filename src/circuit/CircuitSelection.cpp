@@ -4,34 +4,25 @@
 
 namespace Circuit {
 
-namespace {
-
-// Shared scan: walk every element in the database, keep the ones whose
-// Circuit ID matches and whose type matches `keepWires` (true: only
-// Spline wires, false: everything except Spline wires), then select
-// them.
-//
-// DEVKIT: ACAPI_Element_Filter / the AC29 equivalent for "iterate all
-// elements in the current database" — replace this linear scan with
-// whatever indexed criteria search AC29 offers (property-based find is
-// usually far cheaper than a full element walk on large projects).
-GSErrCode SelectByCircuitId (const GS::UniString& circuitId, bool keepWires)
+// TODO: replace this linear element scan with an indexed/criteria-based
+// search once available (property-based find is far cheaper than a
+// full element walk on large projects).
+GSErrCode Selection::SelectByCircuitId (const GS::UniString& circuitId, bool keepWires)
 {
 	if (circuitId.IsEmpty ())
 		return APIERR_BADPARS;
 
 	GS::Array<API_Guid> allElements;
-	// TODO: populate allElements, e.g. via ACAPI_Element_Filter over
-	// API_ZombieElemID with an appropriate filter mask, or a project-wide
-	// element list call — name to be confirmed against AC29 headers.
+	// TODO: populate allElements (e.g. ACAPI_Element_Filter over all
+	// elements in the current database).
 
 	GS::Array<API_Neig> toSelect;
 	for (const API_Guid& guid : allElements) {
-		bool isWire = Wiring::IsWireElement (guid);
+		bool isWire = Wiring::SplineWireElement::IsInstance (guid);
 		if (isWire != keepWires)
 			continue;
 
-		if (GetCircuitId (guid) != circuitId)
+		if (PropertyManager::GetId (guid) != circuitId)
 			continue;
 
 		API_Neig neig = {};
@@ -45,32 +36,26 @@ GSErrCode SelectByCircuitId (const GS::UniString& circuitId, bool keepWires)
 	return ACAPI_Selection_Select (toSelect, true);
 }
 
-} // namespace
-
-GSErrCode SelectCircuitWiring (const GS::UniString& circuitId)
+GSErrCode Selection::SelectWiring (const GS::UniString& circuitId)
 {
 	return SelectByCircuitId (circuitId, /*keepWires=*/ true);
 }
 
-GSErrCode SelectCircuitObjects (const GS::UniString& circuitId)
+GSErrCode Selection::SelectObjects (const GS::UniString& circuitId)
 {
 	return SelectByCircuitId (circuitId, /*keepWires=*/ false);
 }
 
-GS::UniString CircuitIdOfSelection ()
+GS::UniString Selection::CircuitIdOfSelection ()
 {
 	API_SelectionInfo selectionInfo = {};
 	GS::Array<API_Neig> selection;
 
-	GSErrCode err = ACAPI_Selection_Get (&selectionInfo, &selection, true);
-	// DEVKIT: API_SelectionInfo may carry a handle (e.g. a marquee
-	// coordinate list) that needs disposing — check its fields once
-	// convenient; not used here since we only read `selection`.
-	if (err != NoError)
+	if (ACAPI_Selection_Get (&selectionInfo, &selection, true) != NoError)
 		return GS::UniString ();
 
 	for (const API_Neig& neig : selection) {
-		GS::UniString id = GetCircuitId (neig.guid);
+		GS::UniString id = PropertyManager::GetId (neig.guid);
 		if (!id.IsEmpty ())
 			return id;
 	}

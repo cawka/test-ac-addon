@@ -1,7 +1,8 @@
-// Entry-point boilerplate (CheckEnvironment/RegisterInterface/Initialize/
-// FreeData) is taken from GRAPHISOFT/archicad-addon-cmake's
-// Src/AddOnMain.cpp (MIT licensed) — see README.md. Everything past
-// "our own setup, on top of the template" below is this add-on's.
+// Required Add-On lifecycle entry points (CheckEnvironment/
+// RegisterInterface/Initialize/FreeData) — these must stay free
+// functions with these exact names; Archicad calls them by symbol.
+// Boilerplate shape taken from GRAPHISOFT/archicad-addon-cmake's
+// Src/AddOnMain.cpp (MIT licensed) — see README.md.
 
 #include "APIEnvir.h"
 #include "ACAPinc.h"
@@ -16,13 +17,15 @@
 #include "circuit/CircuitProperty.hpp"
 #include "wiring/WireConnection.hpp"
 
-static const GSResID AddOnInfoID		= ID_ADDON_INFO;
-static const Int32 AddOnNameID			= 1;
-static const Int32 AddOnDescriptionID	= 2;
+namespace {
 
-// One resource per command — see ResourceIds.hpp for why a single
-// [title, cmd, cmd, ...] STR# doesn't stay flat under MenuCode_UserDef.
-static const GSResID AddOnMenuResIDs[] = {
+const GSResID AddOnInfoID		= ID_ADDON_INFO;
+const Int32 AddOnNameID		= 1;
+const Int32 AddOnDescriptionID	= 2;
+
+// One resource per command — a single [title, cmd, cmd, ...] STR# does
+// not stay flat under MenuCode_UserDef (see ResourceIds.hpp).
+const GSResID AddOnMenuResIDs[] = {
 	ID_ADDON_MENU_CREATE_WIRE,
 	ID_ADDON_MENU_CONNECT_WIRE_ENDPOINT,
 	ID_ADDON_MENU_CREATE_WIRE_BETWEEN_OBJECTS,
@@ -31,7 +34,14 @@ static const GSResID AddOnMenuResIDs[] = {
 	ID_ADDON_MENU_ABOUT,
 };
 
-// ---- Required Add-On lifecycle entry points ----
+// Currently a no-op; registered alongside the element observers below
+// mainly to keep the init/free lifecycle complete.
+GSErrCode ProjectEventHandlerProc (API_NotifyEventID /*notifID*/, Int32 /*param*/)
+{
+	return NoError;
+}
+
+} // namespace
 
 API_AddonType CheckEnvironment (API_EnvirParams* envir)
 {
@@ -43,107 +53,63 @@ API_AddonType CheckEnvironment (API_EnvirParams* envir)
 
 GSErrCode RegisterInterface (void)
 {
-	A2E_TRACE ("A2E: RegisterInterface start\n");
 #ifdef ServerMainVers_2700
-	// MenuCode_UserDef + a menu-title string as item [1] of each
-	// resource (RINT/AddOn.grc) makes this add-on register its own
-	// top-level "A2" menu instead of inserting into an existing one
-	// (MenuCode_Tools landed under "Options" — not what was wanted).
-	// Registered once per command (see ResourceIds.hpp) so Archicad
-	// keeps them as flat siblings instead of nesting cmd[2].. under
-	// cmd[1] as a submenu.
 	for (GSResID menuResID : AddOnMenuResIDs) {
 		GSFlags flags = (menuResID == ID_ADDON_MENU_ABOUT) ? MenuFlag_SeparatorBefore : MenuFlag_Default;
 		GSErrCode err = ACAPI_MenuItem_RegisterMenu (menuResID, 0, MenuCode_UserDef, flags);
-		A2E_TRACE ("A2E: RegisterInterface - RegisterMenu(%d) returned %d\n", (int) menuResID, (int) err);
 		if (err != NoError)
 			return err;
 	}
 
-	// RINT/BuiltInLibParts.grc always ships a built-in library part
-	// ("Circuit Wire") in this add-on, so this is called unconditionally
-	// rather than detected at runtime — the upstream template's
-	// RSEnumResourceTypes-based HasBuiltInLibPart() check existed to
-	// make its example work whether or not a given build actually
-	// included one; we always do, so that whole detection dance was
-	// just one more thing that could silently come back false and skip
-	// registration with no error.
-	GSErrCode err = ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
-	A2E_TRACE ("A2E: RegisterInterface - RegisterBuiltInLibrary returned %d\n", (int) err);
-	return err;
+	// RINT/BuiltInLibParts.grc always ships the "Circuit Wire" built-in
+	// library part, so this runs unconditionally.
+	return ACAPI_AddOnIntegration_RegisterBuiltInLibrary ();
 #else
 	return ACAPI_Register_Menu (ID_ADDON_MENU_CREATE_WIRE, 0, MenuCode_Tools, MenuFlag_Default);
 #endif
 }
 
-// Currently a no-op — registered below alongside the element observers
-// mainly to establish the full init/free lifecycle pattern (see
-// FreeData) rather than for anything this add-on reacts to yet.
-GSErrCode ProjectEventHandlerProc (API_NotifyEventID /*notifID*/, Int32 /*param*/)
-{
-	return NoError;
-}
-
 GSErrCode Initialize (void)
 {
-	A2E_TRACE ("A2E: Initialize start\n");
-
 	GSErrCode err;
 #ifdef ServerMainVers_2700
 	for (GSResID menuResID : AddOnMenuResIDs) {
-		err = ACAPI_MenuItem_InstallMenuHandler (menuResID, Commands::MenuCommandHandler);
-		A2E_TRACE ("A2E: Initialize - InstallMenuHandler(%d) returned %d\n", (int) menuResID, (int) err);
+		err = ACAPI_MenuItem_InstallMenuHandler (menuResID, Commands::MenuCommandDispatcher::Handle);
 		if (err != NoError)
 			return err;
 	}
 #else
-	err = ACAPI_Install_MenuHandler (ID_ADDON_MENU_CREATE_WIRE, Commands::MenuCommandHandler);
+	err = ACAPI_Install_MenuHandler (ID_ADDON_MENU_CREATE_WIRE, Commands::MenuCommandDispatcher::Handle);
 	if (err != NoError)
 		return err;
 #endif
 
-	err = ACAPI_ProjectOperation_CatchProjectEvent (API_AllProjectNotificationMask, ProjectEventHandlerProc);
-	A2E_TRACE ("A2E: Initialize - CatchProjectEvent returned %d\n", (int) err);
+	ACAPI_ProjectOperation_CatchProjectEvent (API_AllProjectNotificationMask, ProjectEventHandlerProc);
 
-	// Moved here from RestoreAllConnectionObservers (WireConnection.cpp),
-	// which only ever ran from inside MenuCommandHandler's
-	// ACAPI_CallUndoableCommand on a menu click — never from a clean
-	// top-level lifecycle hook. Installing a notification handler isn't
-	// a database write, so it doesn't need undo context at all; this is
-	// the architecturally correct place for it, and the previous
-	// wrong-location call is the leading suspect for why
-	// ACAPI_Element_AttachObserver kept failing downstream (see the
-	// KNOWN GAP note on AttachHostObserver in WireConnection.cpp).
-	err = ACAPI_Element_InstallElementObserver (Wiring::OnHostElementChanged);
+	// A notification registration isn't a database write, so it belongs
+	// in Initialize(), not inside a menu command's undoable-command
+	// block — see ConnectionManager::AttachHostObserver's NOTE.
+	err = ACAPI_Element_InstallElementObserver (Wiring::ConnectionManager::OnHostElementChanged);
 	A2E_TRACE ("A2E: Initialize - InstallElementObserver returned %d\n", (int) err);
 
 	// Catches every newly created element so a future connect can find
-	// hosts without a separate discovery step. Real, confirmed function
-	// (nullptr elemType filter = all types); currently unused by any
+	// hosts without a separate discovery step. Currently unused by any
 	// command but registered/freed here to keep the lifecycle complete.
-	if (err == NoError) {
-		err = ACAPI_Element_CatchNewElement (nullptr, Wiring::OnHostElementChanged);
-		A2E_TRACE ("A2E: Initialize - CatchNewElement returned %d\n", (int) err);
-	}
+	if (err == NoError)
+		ACAPI_Element_CatchNewElement (nullptr, Wiring::ConnectionManager::OnHostElementChanged);
 
-	// Visible, no-debugger-needed confirmation of which build actually
-	// loaded — see Window > Report (or wherever this Archicad build
-	// surfaces it). A2E_GIT_VERSION comes from `git describe
-	// --always --dirty --long`, regenerated on every build (see
-	// CMakeLists.txt / cmake/GenerateGitVersion.cmake), not just every
-	// reconfigure.
+	// Visible, no-debugger-needed confirmation of which build loaded.
+	// A2E_GIT_VERSION comes from `git describe --always --dirty --long`,
+	// regenerated on every build (see cmake/GenerateGitVersion.cmake).
 	ACAPI_WriteReport (GS::UniString ("A2 Electrical loaded — build " A2E_GIT_VERSION), false);
 
-	A2E_TRACE ("A2E: Initialize done\n");
 	return NoError;
 }
 
 GSErrCode FreeData (void)
 {
-	// Mirror image of Initialize()'s three registrations above —
-	// nullptr handlerProc is the documented way to unregister each of
-	// these (confirmed against the real ACAPI_Element_InstallElementObserver
-	// and ACAPI_Element_CatchNewElement header comments).
+	// Mirror of Initialize()'s three registrations — nullptr handlerProc
+	// is the documented way to unregister each of these.
 	ACAPI_ProjectOperation_CatchProjectEvent (0, nullptr);
 	ACAPI_Element_InstallElementObserver (nullptr);
 	ACAPI_Element_CatchNewElement (nullptr, nullptr);

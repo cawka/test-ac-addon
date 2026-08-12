@@ -6,40 +6,39 @@
 
 namespace Wiring {
 
-// Name of the built-in library part shipped in
-// RINT/ACLib/Src/Circuit Wire/ (see RINT/BuiltInLibParts.grc, which is
-// what makes it "built-in" — baked into the add-on bundle and
-// auto-registered in AddOnMain.cpp's RegisterInterface, rather than
-// needing to be added to a project library by hand). Must match the
-// "Circuit Wire.gsm" name used there. Kept as one named constant so a
-// rename only has to happen here.
-inline const GS::UniString kGdlWireLibPartName ("Circuit Wire");
+// Places and maintains instances of the built-in "Circuit Wire" GDL
+// object (see RINT/ACLib/Src/Circuit Wire/, registered as a built-in
+// library part in RINT/BuiltInLibParts.grc). Geometry is encoded as
+// (placement origin, rotation angle, length): the object's own X axis
+// points from its origin toward the far end, so endX is the segment
+// length and endY is always 0 in the object's local frame.
+class GdlWireElement {
+public:
+	GdlWireElement () = delete;
 
-// Places a new "Circuit Wire" object with its origin at startPoint,
-// its endX/endY parameters set to reach endPoint, and bulge left at
-// the library part's default (straight — see
-// RINT/ACLib/Src/Circuit Wire/scripts/2d.gdl). Returns the new
-// element's GUID, or APINULLGuid on failure.
-//
-// DEVKIT: confirm the AC29 call shape for placing an Object by library
-// part name — historically: ACAPI_LibPart_Search to resolve the part's
-// index from its name, then ACAPI_Element_GetDefaults(API_ObjectID) to
-// get a full valid parameter set to start from (an Object can't be
-// created with only 2 of its parameters populated — the rest need
-// their library-part defaults), override endX/endY on top, then
-// ACAPI_Element_Create.
-API_Guid CreateGdlWire (const API_Coord& startPoint, const API_Coord& endPoint, short layerIndex);
+	// Places a new wire from startPoint to endPoint. Returns the new
+	// element's GUID, or APINULLGuid on failure.
+	static API_Guid Create (const API_Coord& startPoint, const API_Coord& endPoint, short layerIndex);
 
-// Repositions an existing "Circuit Wire" element after one of its
-// endpoints moved. Only `movedEnd` is passed in as a new point — the
-// other endpoint is recovered from the element's current placement
-// origin + endX/endY, since the two are joined (moving the origin
-// without adjusting endX/endY would also silently move the far end,
-// which is exactly what must NOT happen when only one side moved).
-GSErrCode SetGdlWireEndpoint (const API_Guid& wireGuid, WireEnd movedEnd, const API_Coord& newPoint);
+	// Repositions an existing wire after movedEnd moved to newPoint. The
+	// other endpoint is recovered from the element's current placement
+	// (origin + angle + length) and kept fixed.
+	static GSErrCode SetEndpoint (const API_Guid& wireGuid, WireEnd movedEnd, const API_Coord& newPoint);
 
-// True if elemGuid is a placed instance of the "Circuit Wire" library part.
-bool IsGdlWireElement (const API_Guid& elemGuid);
+	// True if elemGuid is a placed instance of the "Circuit Wire" library part.
+	static bool IsInstance (const API_Guid& elemGuid);
+
+private:
+	static API_AddParType* FindParam (API_ElementMemo& memo, const char* paramName);
+	static bool GetParam (const API_ElementMemo& memo, const char* paramName, double& outValue);
+	static bool SetParam (API_ElementMemo& memo, const char* paramName, double value);
+
+	// GS::UniString has no "fill this fixed uchar_t buffer" convenience;
+	// destCapacity is the destination array's element count, not bytes.
+	static void FillFixedUniBuffer (GS::uchar_t* dest, USize destCapacity, const GS::UniString& name);
+
+	static inline const GS::UniString kLibPartName = GS::UniString ("Circuit Wire");
+};
 
 } // namespace Wiring
 

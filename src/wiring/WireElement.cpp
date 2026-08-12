@@ -2,7 +2,7 @@
 
 namespace Wiring {
 
-API_Guid CreateWire (const std::vector<WireNode>& nodes, short layerIndex)
+API_Guid SplineWireElement::Create (const std::vector<WireNode>& nodes, short layerIndex)
 {
 	if (nodes.size () < 2)
 		return APINULLGuid;
@@ -11,26 +11,18 @@ API_Guid CreateWire (const std::vector<WireNode>& nodes, short layerIndex)
 	element.header.type = API_SplineID;
 	element.header.layer = ACAPI_CreateAttributeIndex (layerIndex);
 
-	// DEVKIT: API_SplineType's node/direction storage is a memo-backed
-	// array (like polylines), not inline in API_Element — fill
-	// element.spline for the fixed part, then build the matching
-	// API_ElementMemo (coords/dirs arrays) below once the AC29 struct
-	// layout is confirmed against Support/Inc/APIdefs_Elements.h.
+	// TODO: fill element.spline and the matching API_ElementMemo
+	// (coords/dirs arrays) from `nodes` once the AC29 struct layout is
+	// confirmed against Support/Inc/APIdefs_Elements.h.
 	API_ElementMemo memo = {};
-	// memo.coords = ...   (nodes[i].position, 1-based array per AC convention)
-	// memo.vertexIDs = ...
-	// memo.splineDirs = ... (nodes[i].dirIn / dirOut)
 
 	GSErrCode err = ACAPI_Element_Create (&element, &memo);
 	ACAPI_DisposeElemMemoHdls (&memo);
 
-	if (err != NoError)
-		return APINULLGuid;
-
-	return element.header.guid;
+	return err == NoError ? element.header.guid : APINULLGuid;
 }
 
-GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& nodes)
+GSErrCode SplineWireElement::SetNodes (const API_Guid& wireGuid, const std::vector<WireNode>& nodes)
 {
 	if (nodes.size () < 2)
 		return APIERR_BADPARS;
@@ -50,13 +42,12 @@ GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& n
 	if (err != NoError)
 		return err;
 
-	// DEVKIT: overwrite memo.coords / memo.splineDirs from `nodes` here,
-	// same struct-layout caveat as CreateWire above.
+	// TODO: overwrite memo.coords / memo.splineDirs from `nodes`, same
+	// struct-layout caveat as Create above.
 
 	API_Element mask = {};
 	ACAPI_ELEMENT_MASK_CLEAR (mask);
-	// DEVKIT: set the mask fields for the geometry actually changed
-	// (coordinate/spline data) once the field names are confirmed.
+	// TODO: set the mask bits for the changed geometry fields.
 
 	err = ACAPI_Element_Change (&element, &mask, &memo, 0, true);
 	ACAPI_DisposeElemMemoHdls (&memo);
@@ -64,7 +55,7 @@ GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& n
 	return err;
 }
 
-GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint)
+GSErrCode SplineWireElement::SetEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint)
 {
 	API_Element element = {};
 	element.header.guid = wireGuid;
@@ -78,10 +69,8 @@ GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coor
 	if (err != NoError)
 		return err;
 
-	// TODO: read the existing node array out of memo (same struct-layout
-	// caveat as CreateWire/SetWireNodes above), replace nodes.front () or
-	// nodes.back ()'s x/y (keep z) depending on `end`, then call
-	// SetWireNodes with the full, updated node list.
+	// TODO: read the existing node array out of memo, replace the
+	// Start/End node's x/y (keep z) per `end`, then call SetNodes.
 	std::vector<WireNode> nodes;
 	(void) newPoint;
 
@@ -90,10 +79,10 @@ GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coor
 	if (nodes.size () < 2)
 		return APIERR_NOTSUPPORTED;
 
-	return SetWireNodes (wireGuid, nodes);
+	return SetNodes (wireGuid, nodes);
 }
 
-bool IsWireElement (const API_Guid& elemGuid)
+bool SplineWireElement::IsInstance (const API_Guid& elemGuid)
 {
 	API_Elem_Head head = {};
 	head.guid = elemGuid;

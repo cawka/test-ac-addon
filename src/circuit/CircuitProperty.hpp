@@ -5,26 +5,40 @@
 
 namespace Circuit {
 
-// Ensures the "Circuit ID" custom property definition exists in the
-// current project (creates it, as a single-line-text user property, if
-// missing). Idempotent — safe to call from Initialize() every launch.
-//
-// DEVKIT: confirm ACAPI_Property_CreatePropertyDefinition's parameter
-// struct for AC29 (property group placement, default value handling)
-// against ACAPI_PropertyProcedures.hpp.
-GSErrCode EnsureCircuitPropertyDefinition ();
+// Owns the "Circuit ID" custom property definition and reads/writes its
+// per-element values. Elements sharing a Circuit ID are considered part
+// of the same circuit (see Selection).
+class PropertyManager {
+public:
+	PropertyManager () = delete;
 
-// Returns a fresh, unused circuit identifier (e.g. a short GUID-derived
-// string) — used when connecting two elements that don't already
-// belong to a circuit.
-GS::UniString GenerateCircuitId ();
+	// Creates the property definition (and its group) if missing.
+	// Idempotent; safe to call on every command dispatch.
+	static GSErrCode EnsureDefinition ();
 
-// Returns the element's current Circuit ID, or an empty string if it
-// isn't part of a circuit.
-GS::UniString GetCircuitId (const API_Guid& elemGuid);
+	// Returns a fresh, unused circuit identifier.
+	static GS::UniString GenerateId ();
 
-// Sets (or overwrites) the element's Circuit ID.
-GSErrCode SetCircuitId (const API_Guid& elemGuid, const GS::UniString& circuitId);
+	// Returns elemGuid's current Circuit ID, or an empty string if it
+	// isn't part of a circuit.
+	static GS::UniString GetId (const API_Guid& elemGuid);
+
+	// Sets (or overwrites) elemGuid's Circuit ID.
+	static GSErrCode SetId (const API_Guid& elemGuid, const GS::UniString& circuitId);
+
+private:
+	static GSErrCode EnsureGroup ();
+
+	// Appends itemGuid and every descendant classification item's GUID
+	// to outGuids, so the property can be scoped to all classifications.
+	static void CollectClassificationItem (const API_Guid& itemGuid, GS::Array<API_Guid>& outGuids);
+
+	static inline const GS::UniString kGroupName = GS::UniString ("A2 Electrical");
+	static inline const GS::UniString kPropertyName = GS::UniString ("Circuit ID");
+
+	static inline API_Guid groupGuid = APINULLGuid;
+	static inline API_Guid propertyGuid = APINULLGuid;
+};
 
 } // namespace Circuit
 

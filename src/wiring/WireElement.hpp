@@ -9,38 +9,39 @@ namespace Wiring {
 
 // A single curve node: position plus the incoming/outgoing Bezier
 // direction vectors that give the wire its curvature at that node.
-// Leave both vectors zero-length for a straight (non-curved) node.
+// Zero-length vectors mean a straight (non-curved) node.
 struct WireNode {
 	API_Coord3D		position;
 	API_Vector3D	dirIn;
 	API_Vector3D	dirOut;
 };
 
-// Creates a curved wire (native Spline element) through the given
-// nodes on the given layer/floor. Returns the new element's GUID, or
-// APINULLGuid on failure — check ACAPI_Element_Create's return code
-// for the reason.
+// Native Spline-element wire backend, as an alternative to
+// GdlWireElement's placed-object backend. Supports true multi-node
+// curves; the GDL backend only ever has two endpoints.
 //
-// DEVKIT: verify API_SplineType's exact field names/layout against the
-// AC29 headers — this has been reshaped across releases (node array
-// vs. polygon-style sub-element storage).
-API_Guid CreateWire (const std::vector<WireNode>& nodes, short layerIndex);
+// TODO: unimplemented stub. API_SplineType's node/direction storage is
+// memo-backed (like polylines), not inline in API_Element -- fill in
+// once the AC29 struct layout is confirmed.
+class SplineWireElement {
+public:
+	SplineWireElement () = delete;
 
-// Replaces an existing wire's node geometry (endpoints moved because a
-// connected host object moved) and pushes the change to the database.
-GSErrCode SetWireNodes (const API_Guid& wireGuid, const std::vector<WireNode>& nodes);
+	// Creates a wire through the given nodes. Returns the new element's
+	// GUID, or APINULLGuid on failure.
+	static API_Guid Create (const std::vector<WireNode>& nodes, short layerIndex);
 
-// Convenience for the connection-tracking path (see WireConnection.*):
-// reads the wire's current nodes, replaces just its first (Start) or
-// last (End) node's position with newPoint (2D — z taken from the
-// existing node, since connection-tracking only moves things in plan
-// for now), and writes the result back via SetWireNodes. Interior
-// nodes are left untouched.
-GSErrCode SetWireEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint);
+	// Replaces an existing wire's node geometry.
+	static GSErrCode SetNodes (const API_Guid& wireGuid, const std::vector<WireNode>& nodes);
 
-// True if elemGuid refers to an element this module created (checked
-// via element type, not just existence).
-bool IsWireElement (const API_Guid& elemGuid);
+	// Replaces just the Start or End node's position (interior nodes
+	// untouched) -- the connection-tracking counterpart to
+	// GdlWireElement::SetEndpoint.
+	static GSErrCode SetEndpoint (const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint);
+
+	// True if elemGuid is a Spline element created by this class.
+	static bool IsInstance (const API_Guid& elemGuid);
+};
 
 } // namespace Wiring
 
