@@ -76,10 +76,12 @@ GSErrCode RegisterInterface (void)
 #endif
 }
 
-inline
-GSErrCode ProjectEventHandlerProc (API_NotifyEventID notifID, Int32 param)
+// Currently a no-op — registered below alongside the element observers
+// mainly to establish the full init/free lifecycle pattern (see
+// FreeData) rather than for anything this add-on reacts to yet.
+GSErrCode ProjectEventHandlerProc (API_NotifyEventID /*notifID*/, Int32 /*param*/)
 {
-	return 0;
+	return NoError;
 }
 
 GSErrCode Initialize (void)
@@ -101,13 +103,28 @@ GSErrCode Initialize (void)
 #endif
 
 	err = ACAPI_ProjectOperation_CatchProjectEvent (API_AllProjectNotificationMask, ProjectEventHandlerProc);
+	A2E_TRACE ("A2E: Initialize - CatchProjectEvent returned %d\n", (int) err);
 
+	// Moved here from RestoreAllConnectionObservers (WireConnection.cpp),
+	// which only ever ran from inside MenuCommandHandler's
+	// ACAPI_CallUndoableCommand on a menu click — never from a clean
+	// top-level lifecycle hook. Installing a notification handler isn't
+	// a database write, so it doesn't need undo context at all; this is
+	// the architecturally correct place for it, and the previous
+	// wrong-location call is the leading suspect for why
+	// ACAPI_Element_AttachObserver kept failing downstream (see the
+	// KNOWN GAP note on AttachHostObserver in WireConnection.cpp).
 	err = ACAPI_Element_InstallElementObserver (Wiring::OnHostElementChanged);
-    
-    // 2. Optional: Catch newly created items to automatically attach observers to them
-    if (err == NoError) {
-        err = ACAPI_Element_CatchNewElement (nullptr, Wiring::OnHostElementChanged);
-    }
+	A2E_TRACE ("A2E: Initialize - InstallElementObserver returned %d\n", (int) err);
+
+	// Catches every newly created element so a future connect can find
+	// hosts without a separate discovery step. Real, confirmed function
+	// (nullptr elemType filter = all types); currently unused by any
+	// command but registered/freed here to keep the lifecycle complete.
+	if (err == NoError) {
+		err = ACAPI_Element_CatchNewElement (nullptr, Wiring::OnHostElementChanged);
+		A2E_TRACE ("A2E: Initialize - CatchNewElement returned %d\n", (int) err);
+	}
 
 	// Visible, no-debugger-needed confirmation of which build actually
 	// loaded — see Window > Report (or wherever this Archicad build
@@ -123,6 +140,10 @@ GSErrCode Initialize (void)
 
 GSErrCode FreeData (void)
 {
+	// Mirror image of Initialize()'s three registrations above —
+	// nullptr handlerProc is the documented way to unregister each of
+	// these (confirmed against the real ACAPI_Element_InstallElementObserver
+	// and ACAPI_Element_CatchNewElement header comments).
 	ACAPI_ProjectOperation_CatchProjectEvent (0, nullptr);
 	ACAPI_Element_InstallElementObserver (nullptr);
 	ACAPI_Element_CatchNewElement (nullptr, nullptr);

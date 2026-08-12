@@ -81,22 +81,27 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 
 GSErrCode AttachHostObserver (const API_Guid& hostGuid)
 {
-	// KNOWN GAP, not yet resolved: this consistently fails (real error
-	// -2130312994 / 0x810600de, confirmed via the actual DevKit header
-	// to be neither of the two hypotheses tried -- not an undo-context
-	// issue, since it still fails after moving the call outside
-	// ACAPI_CallUndoableCommand entirely; and not APIERR_BADID despite
-	// being the only return code the header documents for this
+	// Was a KNOWN GAP: this consistently failed (real error -2130312994
+	// / 0x810600de -- confirmed via the actual DevKit header to be
+	// neither of the two hypotheses tried at the time: not an
+	// undo-context issue, since it still failed after moving this call
+	// outside ACAPI_CallUndoableCommand entirely; and not APIERR_BADID
+	// despite being the only return code the header documents for this
 	// function, since APIERR_BADID's real value (APIErrorStart + 101 =
-	// 0x81060065) doesn't match 0x810600de). We're calling with
-	// notifyFlags left at its default (GSFlags notifyFlags = 0), and a
-	// zero/no-flags mask is the remaining untested suspect, but the
-	// actual valid flag constants for this parameter aren't confirmed.
-	// Effect: the wire is created and connected fully (position,
-	// geometry, Circuit ID) but does NOT currently move when its host
-	// element moves -- OnHostElementChanged never fires for it. Fix
-	// this by finding the real notifyFlags values (or the real cause)
-	// before relying on live move-tracking.
+	// 0x81060065) doesn't match 0x810600de).
+	//
+	// Leading fix, not yet confirmed by a real test: the global handler
+	// (ACAPI_Element_InstallElementObserver) was only ever being
+	// installed from RestoreAllConnectionObservers, itself only called
+	// from inside MenuCommandHandler's ACAPI_CallUndoableCommand on a
+	// menu click -- never from a clean lifecycle hook. Moved to
+	// AddOnMain.cpp's Initialize() instead, which is architecturally
+	// correct for a notification registration (not a database write, no
+	// undo context needed) and is the standard place real add-ons do
+	// this. If AttachObserver still fails after this, notifyFlags being
+	// left at its default (GSFlags notifyFlags = 0) is the next suspect
+	// -- the real valid flag constants for that parameter still aren't
+	// confirmed.
 	GSErrCode err = ACAPI_Element_AttachObserver (hostGuid);
 	A2E_TRACE ("A2E: AttachHostObserver - AttachObserver returned %d\n", (int) err);
 	return err;
@@ -152,30 +157,23 @@ API_Guid ConnectObjectsWithGdlWire (const API_Guid& startHostGuid, const API_Gui
 
 GSErrCode RestoreAllConnectionObservers ()
 {
-	// Now called from MenuCommandHandler on every click (see
-	// MenuCommands.cpp — needs an ACAPI_CallUndoableCommand context,
-	// which Initialize() doesn't have), not once at load like before —
-	// so this needs its own idempotency guard. Same class of bug as the
-	// property/group ones: ACAPI_Element_InstallElementObserver has no
-	// documented-safe "call it again, it's a no-op" behavior confirmed,
-	// so assume repeat calls can fail and guard against ever making a
-	// second one.
-	static bool installed = false;
-	if (!installed) {
-		GSErrCode err = ACAPI_Element_InstallElementObserver (&OnHostElementChanged);
-		A2E_TRACE ("A2E: RestoreAllConnectionObservers - InstallElementObserver returned %d\n", (int) err);
-		if (err != NoError)
-			return err;
-		installed = true;
-	}
-
+	// The global handler install used to happen here (guarded, since
+	// this only ever ran from inside MenuCommandHandler's
+	// ACAPI_CallUndoableCommand on a menu click). Moved to
+	// AddOnMain.cpp's Initialize() instead — a notification registration
+	// isn't a database write and doesn't belong inside undo context, and
+	// running it from the wrong place was the leading suspect for
+	// ACAPI_Element_AttachObserver's persistent failure (see the KNOWN
+	// GAP note on AttachHostObserver below).
+	//
 	// TODO: enumerate all wire elements — both native Splines
 	// (API_SplineID) and placed "Circuit Wire" objects
 	// (GdlWireElement::IsGdlWireElement) — load each one's stored
 	// connections, and call ACAPI_Element_AttachObserver for each
 	// distinct host GUID found. Needed so connections survive project
-	// reload, since attaching (unlike the install above, which only
-	// needs to happen once ever) is per-element and runtime-only.
+	// reload, since per-element attaching is runtime-only (unlike the
+	// global install, which only needs to happen once ever, now handled
+	// in Initialize()).
 	return NoError;
 }
 

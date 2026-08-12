@@ -100,17 +100,21 @@ shared by both wire backends:
   anchor point and dispatching to whichever backend that wire actually
   is — `GdlWireElement::SetGdlWireEndpoint` if `IsGdlWireElement` says
   so, `WireElement::SetWireEndpoint` otherwise.
-  **KNOWN GAP, not working yet:** `AttachHostObserver`
-  (`WireConnection.cpp`) consistently fails at runtime with a real,
-  confirmed-against-the-actual-header error
+  **Was a known gap, fix not yet confirmed by a real test:**
+  `AttachHostObserver` (`WireConnection.cpp`) consistently failed at
+  runtime with a real, confirmed-against-the-actual-header error
   (`ACAPI_Element_AttachObserver`'s only documented return code,
-  `APIERR_BADID`, is ruled out numerically — see the comment on
-  `AttachHostObserver` for the full trail). Wires are created and
-  connected correctly (position, geometry, Circuit ID) but do **not**
-  currently move when their host moves. Leading unconfirmed suspect:
-  `notifyFlags` is left at its default (`GSFlags notifyFlags = 0`),
-  which may not be a valid flags value — the real valid constants for
-  this parameter aren't confirmed yet.
+  `APIERR_BADID`, was ruled out numerically — see the comment on
+  `AttachHostObserver` for the full trail). Root cause found: the
+  global handler install was only ever happening from inside
+  `MenuCommandHandler`'s `ACAPI_CallUndoableCommand`, never from a
+  clean lifecycle hook — moved to `AddOnMain.cpp`'s `Initialize()`
+  (with matching `FreeData()` cleanup), which is architecturally
+  correct since a notification registration isn't a database write and
+  doesn't need undo context. If `AttachObserver` still fails after
+  this, `notifyFlags` being left at its default (`GSFlags notifyFlags
+  = 0`) is the next suspect — the real valid flag constants for that
+  parameter still aren't confirmed.
 - **Reconnecting after undo/redo/copy.** Observers don't survive across
   undo boundaries or document reload by themselves — re-install them
   from `Initialize()` by scanning existing wires (both backends) for
