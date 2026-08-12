@@ -1,0 +1,19 @@
+{
+	"editor.formatOnSave": true,
+	"editor.detectIndentation": false,
+	"editor.tabSize": 2,
+	"editor.insertSpaces": true,
+	"[cpp]": {
+		"editor.defaultFormatter": "ms-vscode.cpptools",
+		"editor.formatOnSave": true,
+		"editor.tabSize": 2
+	},
+	"[c]": {
+		"editor.defaultFormatter": "ms-vscode.cpptools",
+		"editor.formatOnSave": true,
+		"editor.tabSize": 2
+	},
+	"C_Cpp.clang_format_style": "file",
+	"C_Cpp.clang_format_fallbackStyle": "LLVM",
+	"C_Cpp.formatting": "clangFormat"
+}

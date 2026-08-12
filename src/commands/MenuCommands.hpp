@@ -3,35 +3,36 @@
 
 #include "ACAPinc.h"
 
-namespace Commands {
+namespace commands {
 
 // Dispatches Archicad menu clicks to this add-on's commands. One
 // handler is registered per ID_ADDON_MENU_* resource (see
 // ResourceIds.hpp) via ACAPI_MenuItem_InstallMenuHandler in
 // AddOnMain.cpp's Initialize().
-class MenuCommandDispatcher {
+class MenuCommandDispatcher
+{
 public:
-	MenuCommandDispatcher () = delete;
+  MenuCommandDispatcher() = delete;
 
-	static GSErrCode Handle (const API_MenuParams* menuParams);
+  static GSErrCode handle(const API_MenuParams* menuParams);
 
 private:
-	// TODO: unimplemented — interactive node-by-node curve input
-	// (click to place nodes, drag Bezier handles, Enter/Esc to finish).
-	static GSErrCode CreateWire ();
+  // TODO: unimplemented — interactive node-by-node curve input
+  // (click to place nodes, drag Bezier handles, Enter/Esc to finish).
+  static GSErrCode createWire();
 
-	// TODO: unimplemented — for the native-Spline backend: click a wire
-	// endpoint, then a host element, and call
-	// Wiring::ConnectionManager::Connect. The GDL backend doesn't need
-	// this (see CreateWireBetweenObjects).
-	static GSErrCode ConnectWireEndpoint ();
+  // TODO: unimplemented — for the native-Spline backend: click a wire
+  // endpoint, then a host element, and call
+  // wiring::ConnectionManager::connect. The GDL backend doesn't need
+  // this (see createWireBetweenObjects).
+  static GSErrCode connectWireEndpoint();
 
-	static GSErrCode CreateWireBetweenObjects ();
-	static GSErrCode SelectCircuitWiring ();
-	static GSErrCode SelectCircuitObjects ();
-	static GSErrCode About ();
+  static GSErrCode createWireBetweenObjects();
+  static GSErrCode selectCircuitWiring();
+  static GSErrCode selectCircuitObjects();
+  static GSErrCode showAbout();
 };
 
-} // namespace Commands
+} // namespace commands
 
 #endif

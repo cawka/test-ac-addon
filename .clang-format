@@ -1,0 +1,82 @@
+---
+# Approximates the ndn-cxx code style guide
+# (https://docs.named-data.net/ndn-cxx/current/code-style.html).
+#
+# clang-format can only enforce whitespace/brace/line-breaking rules.
+# It cannot enforce or rename identifiers, so these parts of the style
+# guide are NOT covered here and must be followed by hand:
+#   - type names UpperCamelCase, methods/variables lowerCamelCase
+#   - constants ALL_CAPS_WITH_UNDERSCORES
+#   - non-static private/protected data members prefixed m_
+#   - non-public static data members prefixed s_
+#   - global variables prefixed g_
+#   - boolean variables/methods prefixed is/has/need
+#   - namespace names all lowercase
+#   - methods named starting with a verb (getName(), not name())
+#   - // for all comments (including multi-line); /** */ only for
+#     Doxygen class/method documentation
+
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
+ColumnLimit: 100
+ContinuationIndentWidth: 2
+AccessModifierOffset: -2
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterStruct: true
+  AfterEnum: true
+  AfterUnion: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterControlStatement: false
+  AfterExternBlock: true
+  BeforeElse: true
+  BeforeCatch: true
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+AlwaysBreakAfterReturnType: AllDefinitions
+AlwaysBreakTemplateDeclarations: Yes
+
+NamespaceIndentation: None
+FixNamespaceComments: true
+
+IndentCaseLabels: true
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpacesInSquareBrackets: false
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AlignTrailingComments: true
+BinPackArguments: false
+BinPackParameters: false
+Cpp11BracedListStyle: true
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^".*"'
+    Priority: 1
+  - Regex: '^<.*>'
+    Priority: 2
+SortIncludes: CaseSensitive
+
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false

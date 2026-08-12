@@ -3,31 +3,31 @@
 #ifndef CIRCUIT_WIRING_PRECOMPILED_HEADER_HPP
 #define CIRCUIT_WIRING_PRECOMPILED_HEADER_HPP
 
-#include <GSNew.hpp>
 #include <GSMalloc.hpp>
+#include <GSNew.hpp>
 
-#if defined (macintosh)
+#if defined(macintosh)
 namespace std {
-	void *GS_realloc (void *userData, size_t newSize);
+void* GS_realloc(void* userData, size_t newSize);
 }
 #endif
 
 #include <limits.h>
 #include <math.h>
+#include <memory>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include <memory>
+#include <vector>
 
-#if defined (WINDOWS)
+#if defined(WINDOWS)
 #include "Win32Interface.hpp"
 #endif
 
-#include "APIEnvir.h"
 #include "ACAPinc.h"
+#include "APIEnvir.h"
 
 #endif // CIRCUIT_WIRING_PRECOMPILED_HEADER_HPP

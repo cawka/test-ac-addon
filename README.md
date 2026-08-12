@@ -108,11 +108,11 @@ docs/ARCHITECTURE.md         how the three features map onto the API
 
 Two interchangeable wire backends, both 2D-only for now:
 
-- **Native Spline** (`Wiring::SplineWireElement`) — a real
+- **Native Spline** (`wiring::SplineWireElement`) — a real
   `API_SplineType` element, so Archicad's own edit/undo/snap machinery
   applies for free, and it can have any number of curve nodes.
   Unimplemented — see the TODOs on the class.
-- **GDL object** (`Wiring::GdlWireElement`, library part in
+- **GDL object** (`wiring::GdlWireElement`, library part in
   `RINT/ACLib/Src/Circuit Wire/`) — a custom Object with
   `endX`/`endY`/`bulge`/`linePen`/`lineType` parameters; the 2D script
   draws a single curved (or straight) line from its origin to the far
@@ -121,21 +121,21 @@ Two interchangeable wire backends, both 2D-only for now:
   (baked into the add-on bundle, auto-registered at startup — see
   `RegisterInterface` in `AddOnMain.cpp`), not something added to a
   project library by hand.
-  `Commands::MenuCommandDispatcher::CreateWireBetweenObjects` is wired
+  `commands::MenuCommandDispatcher::createWireBetweenObjects` is wired
   up end-to-end: click a start object, click an end object, and it
   places one of these directly between their anchor points.
 - **Live connection to objects** — a wire endpoint is anchored to a
-  host element's own placement origin (`Wiring::ElementAnchor` —
+  host element's own placement origin (`wiring::ElementAnchor` —
   deliberately not a specific hotspot/edge, to keep "click an object"
-  a complete connect gesture). `Wiring::ConnectionManager` installs a
+  a complete connect gesture). `wiring::ConnectionManager` installs a
   global element observer (`ACAPI_Element_InstallElementObserver`, from
   `AddOnMain.cpp`'s `Initialize()`) plus a per-host
-  `AttachHostObserver`; when a host moves, `OnHostElementChanged`
+  `attachHostObserver`; when a host moves, `onHostElementChanged`
   recomputes and pushes new geometry through whichever backend that
   wire uses.
-- **Circuit selection** — `Circuit::PropertyManager` owns a custom
+- **Circuit selection** — `circuit::PropertyManager` owns a custom
   property definition ("Circuit ID"), written onto every wire/object as
-  it's connected. `Circuit::Selection` filters elements by that
+  it's connected. `circuit::Selection` filters elements by that
   property value and calls `ACAPI_Selection_Select`.
 
 ## Known gaps
