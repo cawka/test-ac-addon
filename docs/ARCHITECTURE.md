@@ -94,14 +94,23 @@ shared by both wire backends:
   once you're against real headers; `LoadConnection`/`StoreConnection`
   in `WireConnection.cpp` are the TODO stubs for this).
 - **How the wire finds out the host moved, and which backend to push
-  the update through.** Register an element observer on the host GUID
-  via `ACAPI_Notification_InstallElementObserver`. On
-  `APINotify_ChangeType` (or whatever AC29 names the "geometry changed"
-  reason), `OnHostElementChanged` reads the host's new anchor point and
-  dispatches to whichever backend that wire actually is —
-  `GdlWireElement::SetGdlWireEndpoint` if `IsGdlWireElement` says so,
-  `WireElement::SetWireEndpoint` otherwise — so the two backends share
-  one observer/index/dispatch path instead of duplicating it.
+  the update through.** `ACAPI_Element_InstallElementObserver` (once,
+  globally) plus `ACAPI_Element_AttachObserver` (per host) is meant to
+  make `OnHostElementChanged` fire when a host moves, reading its new
+  anchor point and dispatching to whichever backend that wire actually
+  is — `GdlWireElement::SetGdlWireEndpoint` if `IsGdlWireElement` says
+  so, `WireElement::SetWireEndpoint` otherwise.
+  **KNOWN GAP, not working yet:** `AttachHostObserver`
+  (`WireConnection.cpp`) consistently fails at runtime with a real,
+  confirmed-against-the-actual-header error
+  (`ACAPI_Element_AttachObserver`'s only documented return code,
+  `APIERR_BADID`, is ruled out numerically — see the comment on
+  `AttachHostObserver` for the full trail). Wires are created and
+  connected correctly (position, geometry, Circuit ID) but do **not**
+  currently move when their host moves. Leading unconfirmed suspect:
+  `notifyFlags` is left at its default (`GSFlags notifyFlags = 0`),
+  which may not be a valid flags value — the real valid constants for
+  this parameter aren't confirmed yet.
 - **Reconnecting after undo/redo/copy.** Observers don't survive across
   undo boundaries or document reload by themselves — re-install them
   from `Initialize()` by scanning existing wires (both backends) for

@@ -81,6 +81,22 @@ GSErrCode Connect (const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& 
 
 GSErrCode AttachHostObserver (const API_Guid& hostGuid)
 {
+	// KNOWN GAP, not yet resolved: this consistently fails (real error
+	// -2130312994 / 0x810600de, confirmed via the actual DevKit header
+	// to be neither of the two hypotheses tried -- not an undo-context
+	// issue, since it still fails after moving the call outside
+	// ACAPI_CallUndoableCommand entirely; and not APIERR_BADID despite
+	// being the only return code the header documents for this
+	// function, since APIERR_BADID's real value (APIErrorStart + 101 =
+	// 0x81060065) doesn't match 0x810600de). We're calling with
+	// notifyFlags left at its default (GSFlags notifyFlags = 0), and a
+	// zero/no-flags mask is the remaining untested suspect, but the
+	// actual valid flag constants for this parameter aren't confirmed.
+	// Effect: the wire is created and connected fully (position,
+	// geometry, Circuit ID) but does NOT currently move when its host
+	// element moves -- OnHostElementChanged never fires for it. Fix
+	// this by finding the real notifyFlags values (or the real cause)
+	// before relying on live move-tracking.
 	GSErrCode err = ACAPI_Element_AttachObserver (hostGuid);
 	A2E_TRACE ("A2E: AttachHostObserver - AttachObserver returned %d\n", (int) err);
 	return err;
