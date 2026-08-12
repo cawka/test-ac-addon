@@ -76,6 +76,12 @@ GSErrCode RegisterInterface (void)
 #endif
 }
 
+inline
+GSErrCode ProjectEventHandlerProc (API_NotifyEventID notifID, Int32 param)
+{
+	return 0;
+}
+
 GSErrCode Initialize (void)
 {
 	A2E_TRACE ("A2E: Initialize start\n");
@@ -94,6 +100,15 @@ GSErrCode Initialize (void)
 		return err;
 #endif
 
+	err = ACAPI_ProjectOperation_CatchProjectEvent (API_AllProjectNotificationMask, ProjectEventHandlerProc);
+
+	err = ACAPI_Element_InstallElementObserver (Wiring::OnHostElementChanged);
+    
+    // 2. Optional: Catch newly created items to automatically attach observers to them
+    if (err == NoError) {
+        err = ACAPI_Element_CatchNewElement (nullptr, Wiring::OnHostElementChanged);
+    }
+
 	// Visible, no-debugger-needed confirmation of which build actually
 	// loaded — see Window > Report (or wherever this Archicad build
 	// surfaces it). A2E_GIT_VERSION comes from `git describe
@@ -108,5 +123,9 @@ GSErrCode Initialize (void)
 
 GSErrCode FreeData (void)
 {
+	ACAPI_ProjectOperation_CatchProjectEvent (0, nullptr);
+	ACAPI_Element_InstallElementObserver (nullptr);
+	ACAPI_Element_CatchNewElement (nullptr, nullptr);
+
 	return NoError;
 }
