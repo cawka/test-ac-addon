@@ -45,7 +45,7 @@ BraceWrapping:
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 
-AlwaysBreakAfterReturnType: AllDefinitions
+AlwaysBreakAfterReturnType: All
 AlwaysBreakTemplateDeclarations: Yes
 
 NamespaceIndentation: None

@@ -16,7 +16,8 @@ public:
   // Returns elemGuid's placement origin in global 2D coordinates.
   // TODO: only API_ObjectID/API_LampID are handled — extend as wires
   // start connecting to other element types (walls, etc).
-  static API_Coord getPoint(const API_Guid& elemGuid);
+  static API_Coord
+  getPoint(const API_Guid& elemGuid);
 };
 
 } // namespace wiring

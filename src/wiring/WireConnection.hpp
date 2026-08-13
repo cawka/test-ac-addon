@@ -32,32 +32,37 @@ public:
   // connection and stamps both elements with a shared Circuit ID (see
   // circuit::PropertyManager). Does not attach the live-move observer
   // — see attachHostObserver.
-  static GSErrCode connect(const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
+  static GSErrCode
+  connect(const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
 
   // Attaches the per-element observer that makes onHostElementChanged
   // fire when hostGuid moves. Deliberately callable on its own,
   // outside any ACAPI_CallUndoableCommand — a notification
   // subscription isn't a database write and doesn't need undo context.
-  static GSErrCode attachHostObserver(const API_Guid& hostGuid);
+  static GSErrCode
+  attachHostObserver(const API_Guid& hostGuid);
 
   // Removes the connection and detaches the observer if hostGuid has
   // no other wires left. Does not touch the element's Circuit ID —
   // that's circuit membership, not a per-endpoint attachment.
-  static GSErrCode disconnect(const API_Guid& wireGuid, WireEnd end);
+  static GSErrCode
+  disconnect(const API_Guid& wireGuid, WireEnd end);
 
   // The "click start object, click end object" gesture in one call:
   // places a new GDL wire (see GdlWireElement) between their current
   // anchor points and connects both ends. Returns the new wire's GUID,
   // or APINULLGuid on failure.
-  static API_Guid connectObjectsWithGdlWire(const API_Guid& startHostGuid,
-                                            const API_Guid& endHostGuid,
-                                            short layerIndex);
+  static API_Guid
+  connectObjectsWithGdlWire(const API_Guid& startHostGuid,
+                            const API_Guid& endHostGuid,
+                            short layerIndex);
 
   // Re-installs observers for every stored connection. Call after
   // undo/redo — see docs/ARCHITECTURE.md.
   // TODO: unimplemented — needs to enumerate existing wire elements
   // (both backends) and re-attach their host observers.
-  static GSErrCode restoreAllConnectionObservers();
+  static GSErrCode
+  restoreAllConnectionObservers();
 
   // The global handler passed to ACAPI_Element_InstallElementObserver.
   // Archicad calls this for every element that's been
@@ -65,10 +70,12 @@ public:
   // wire endpoint anchored to whichever element changed.
   // TODO: elemType->notifID isn't filtered on yet — this reacts to
   // every notification (move, delete, ...) alike.
-  static GSErrCode onHostElementChanged(const API_NotifyElementType* elemType);
+  static GSErrCode
+  onHostElementChanged(const API_NotifyElementType* elemType);
 
 private:
-  static ConnectionInfo loadConnection(const API_Guid& wireGuid, WireEnd end);
+  static ConnectionInfo
+  loadConnection(const API_Guid& wireGuid, WireEnd end);
   static GSErrCode
   storeConnection(const API_Guid& wireGuid, WireEnd end, const ConnectionInfo& info);
 

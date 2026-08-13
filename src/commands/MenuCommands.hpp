@@ -14,23 +14,30 @@ class MenuCommandDispatcher
 public:
   MenuCommandDispatcher() = delete;
 
-  static GSErrCode handle(const API_MenuParams* menuParams);
+  static GSErrCode
+  handle(const API_MenuParams* menuParams);
 
 private:
   // TODO: unimplemented — interactive node-by-node curve input
   // (click to place nodes, drag Bezier handles, Enter/Esc to finish).
-  static GSErrCode createWire();
+  static GSErrCode
+  createWire();
 
   // TODO: unimplemented — for the native-Spline backend: click a wire
   // endpoint, then a host element, and call
   // wiring::ConnectionManager::connect. The GDL backend doesn't need
   // this (see createWireBetweenObjects).
-  static GSErrCode connectWireEndpoint();
+  static GSErrCode
+  connectWireEndpoint();
 
-  static GSErrCode createWireBetweenObjects();
-  static GSErrCode selectCircuitWiring();
-  static GSErrCode selectCircuitObjects();
-  static GSErrCode showAbout();
+  static GSErrCode
+  createWireBetweenObjects();
+  static GSErrCode
+  selectCircuitWiring();
+  static GSErrCode
+  selectCircuitObjects();
+  static GSErrCode
+  showAbout();
 };
 
 } // namespace commands

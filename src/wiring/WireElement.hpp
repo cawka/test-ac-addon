@@ -32,18 +32,22 @@ public:
 
   // Creates a wire through the given nodes. Returns the new element's
   // GUID, or APINULLGuid on failure.
-  static API_Guid create(const std::vector<WireNode>& nodes, short layerIndex);
+  static API_Guid
+  create(const std::vector<WireNode>& nodes, short layerIndex);
 
   // Replaces an existing wire's node geometry.
-  static GSErrCode setNodes(const API_Guid& wireGuid, const std::vector<WireNode>& nodes);
+  static GSErrCode
+  setNodes(const API_Guid& wireGuid, const std::vector<WireNode>& nodes);
 
   // Replaces just the Start or End node's position (interior nodes
   // untouched) -- the connection-tracking counterpart to
   // GdlWireElement::setEndpoint.
-  static GSErrCode setEndpoint(const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint);
+  static GSErrCode
+  setEndpoint(const API_Guid& wireGuid, WireEnd end, const API_Coord& newPoint);
 
   // True if elemGuid is a Spline element created by this class.
-  static bool isInstance(const API_Guid& elemGuid);
+  static bool
+  isInstance(const API_Guid& elemGuid);
 };
 
 } // namespace wiring

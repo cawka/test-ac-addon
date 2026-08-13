@@ -8,7 +8,8 @@
 
 #if defined(macintosh)
 namespace std {
-void* GS_realloc(void* userData, size_t newSize);
+void*
+GS_realloc(void* userData, size_t newSize);
 }
 #endif
 
